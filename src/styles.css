@@ -49,6 +49,10 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .auth-form-login, .auth-form-register { animation: authFormFade .26s ease both; }
 .auth-form h2 { margin: 0 0 5px; font-size: 1.55rem; }
 .auth-form label, .profile-form label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: .88rem; }
+.auth-form label.has-error { color: #ff9ca8; }
+.auth-form label.has-error input { border-color: #d95d6d; background: rgba(255, 91, 112, .08); box-shadow: 0 0 0 3px rgba(255, 91, 112, .1); }
+.auth-form label.has-error input:focus { border-color: #ff7e8c; box-shadow: 0 0 0 3px rgba(255, 91, 112, .16); }
+.field-error { display: block; margin-top: -2px; padding: 7px 9px; border: 1px solid rgba(255,126,140,.28); border-radius: 7px; color: #ffb4bd; background: rgba(255,91,112,.12); font-size: .75rem; line-height: 1.35; animation: fieldErrorIn .2s ease both; }
 .demo-credentials { margin: 2px 0 0; color: var(--muted); text-align: center; font-size: .8rem; }
 .primary-btn, .ghost-btn, .mini-action, .danger-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 9px 13px; border-radius: 9px; font-weight: 700; transition: .18s ease; }
 .primary-btn { border-color: var(--accent); color: white; background: var(--accent); }
@@ -368,6 +372,7 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 @keyframes presenceReveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes statusPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(69,214,194,.1); } 50% { box-shadow: 0 0 0 6px rgba(69,214,194,.03); } }
 @keyframes authFormFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fieldErrorIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

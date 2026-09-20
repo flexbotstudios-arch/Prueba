@@ -29,6 +29,7 @@ function App() {
   const [profileId, setProfileId] = useState(null);
   const [authView, setAuthView] = useState('login');
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
+  const [loginErrors, setLoginErrors] = useState({ identifier: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', username: '', email: '', password: '' });
   const [selectedBoardId, setSelectedBoardId] = useState('general');
   const [selectedThreadId, setSelectedThreadId] = useState(null);
@@ -180,13 +181,25 @@ function App() {
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    const errors = {
+      identifier: loginForm.identifier.trim() ? '' : 'Escribe tu username o correo.',
+      password: loginForm.password ? '' : 'Escribe tu contraseña.',
+    };
+    if (loginForm.identifier.includes('@') && loginForm.identifier.includes('.') && !/^\S+@\S+\.\S+$/.test(loginForm.identifier.trim())) {
+      errors.identifier = 'El formato del correo no es válido.';
+    }
+    if (errors.identifier || errors.password) {
+      setLoginErrors(errors);
+      return;
+    }
     try {
       const result = await api('/api/login', json(loginForm));
       setSession({ user: result.user, token: result.token });
       setLoginForm({ identifier: '', password: '' });
+      setLoginErrors({ identifier: '', password: '' });
       await fetchForumData();
     } catch (error) {
-      showNotice(error.message, 'No se pudo iniciar sesión');
+      setLoginErrors({ identifier: 'Username o correo incorrectos.', password: 'Contraseña incorrecta.' });
     }
   };
 
@@ -362,7 +375,7 @@ function App() {
     }
   };
 
-  if (!session) return <AuthScreen authView={authView} setAuthView={setAuthView} loginForm={loginForm} setLoginForm={setLoginForm} registerForm={registerForm} setRegisterForm={setRegisterForm} handleLogin={handleLogin} handleRegister={handleRegister} />;
+  if (!session) return <AuthScreen authView={authView} setAuthView={setAuthView} loginForm={loginForm} setLoginForm={setLoginForm} loginErrors={loginErrors} setLoginErrors={setLoginErrors} registerForm={registerForm} setRegisterForm={setRegisterForm} handleLogin={handleLogin} handleRegister={handleRegister} />;
   if (loading) return <div className="loading-screen"><div className="loading-orbit"><div className="logo">F</div></div><strong>Preparando tu espacio</strong><span>Un momento...</span></div>;
 
   return (
@@ -451,7 +464,7 @@ function UserLink({ user, onClick }) {
   return <button className="user-link" onClick={onClick}><Avatar user={user} small /><span><strong>{user.name || 'Usuario'}</strong>{user.username && <small>{user.username}</small>}</span><RoleBadge role={user.role || 'member'} /></button>;
 }
 
-function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, registerForm, setRegisterForm, handleLogin, handleRegister }) {
+function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, loginErrors, setLoginErrors, registerForm, setRegisterForm, handleLogin, handleRegister }) {
   return (
     <div className="auth-screen">
       <div className="auth-card">
@@ -464,8 +477,8 @@ function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, registerFo
         {authView === 'login' ? (
           <form key="login" onSubmit={handleLogin} className="auth-form auth-form-login">
             <h2>Accede a tu cuenta</h2>
-            <label>Username o correo<input value={loginForm.identifier} onChange={(event) => setLoginForm({ ...loginForm, identifier: event.target.value })} placeholder="@tu_username" /></label>
-            <label>Contraseña<input type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} /></label>
+            <label className={loginErrors.identifier ? 'has-error' : ''}>Username o correo<input aria-invalid={Boolean(loginErrors.identifier)} value={loginForm.identifier} onChange={(event) => { setLoginForm({ ...loginForm, identifier: event.target.value }); setLoginErrors((current) => ({ ...current, identifier: '' })); }} placeholder="@tu_username" />{loginErrors.identifier && <span className="field-error" role="alert">{loginErrors.identifier}</span>}</label>
+            <label className={loginErrors.password ? 'has-error' : ''}>Contraseña<input aria-invalid={Boolean(loginErrors.password)} type="password" value={loginForm.password} onChange={(event) => { setLoginForm({ ...loginForm, password: event.target.value }); setLoginErrors((current) => ({ ...current, password: '' })); }} />{loginErrors.password && <span className="field-error" role="alert">{loginErrors.password}</span>}</label>
             <button className="primary-btn">Entrar</button>
           </form>
         ) : (
