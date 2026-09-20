@@ -199,7 +199,11 @@ function App() {
       setLoginErrors({ identifier: '', password: '' });
       await fetchForumData();
     } catch (error) {
-      setLoginErrors({ identifier: 'Username o correo incorrectos.', password: 'Contraseña incorrecta.' });
+      if (error.message === 'La contraseña es incorrecta.') {
+        setLoginErrors({ identifier: '', password: error.message });
+      } else {
+        setLoginErrors({ identifier: error.message || 'No se encontró la cuenta.', password: '' });
+      }
     }
   };
 

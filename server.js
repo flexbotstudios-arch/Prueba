@@ -400,7 +400,11 @@ app.post('/api/login', (req, res) => {
   const password = normalizeText(req.body.password);
   if (!identifier || !password) return res.status(400).json({ message: 'Usuario/correo y contraseña obligatorios' });
   const user = queryOne('SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', [identifier, identifier]);
-  if (!user || !verifyPassword(password, user.passwordHash)) return res.status(401).json({ message: 'Credenciales incorrectas' });
+  if (!user) {
+    const missingMessage = identifier.startsWith('@') ? 'Ese usuario no existe.' : 'Ese correo no existe.';
+    return res.status(404).json({ message: missingMessage });
+  }
+  if (!verifyPassword(password, user.passwordHash)) return res.status(401).json({ message: 'La contraseña es incorrecta.' });
   if (user.status === 'banned') return res.status(403).json({ message: sanctionMessage(user, 'iniciar sesión') });
   return res.json({ user: serializeUser(user), token: createSession(user.id) });
 });
