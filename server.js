@@ -412,6 +412,13 @@ app.post('/api/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
+app.post('/api/presence/offline', (req, res) => {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : normalizeText(req.body.token);
+  if (token) sessions.delete(token);
+  return res.json({ ok: true });
+});
+
 app.patch('/api/users/:id/role', (req, res) => {
   if (!requireRole(req, res, ['admin', 'creator'])) return;
   const role = req.body.role;

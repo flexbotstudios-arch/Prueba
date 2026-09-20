@@ -98,6 +98,17 @@ function App() {
   }, [session]);
 
   useEffect(() => {
+    const token = session?.token;
+    if (!token) return undefined;
+    const markOffline = () => {
+      const body = new Blob([JSON.stringify({ token })], { type: 'application/json' });
+      navigator.sendBeacon?.('/api/presence/offline', body);
+    };
+    window.addEventListener('pagehide', markOffline);
+    return () => window.removeEventListener('pagehide', markOffline);
+  }, [session?.token]);
+
+  useEffect(() => {
     if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     else localStorage.removeItem(SESSION_KEY);
   }, [session]);
