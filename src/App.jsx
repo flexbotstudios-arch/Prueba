@@ -181,6 +181,7 @@ function App() {
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    setLoginErrors({ identifier: '', password: '' });
     const errors = {
       identifier: loginForm.identifier.trim() ? '' : 'Escribe tu username o correo.',
       password: loginForm.password ? '' : 'Escribe tu contraseña.',
@@ -199,10 +200,11 @@ function App() {
       setLoginErrors({ identifier: '', password: '' });
       await fetchForumData();
     } catch (error) {
-      if (error.message === 'La contraseña es incorrecta.') {
-        setLoginErrors({ identifier: '', password: error.message });
+      const message = error.message || 'No se pudo iniciar sesión.';
+      if (message.toLowerCase().includes('contraseña')) {
+        setLoginErrors({ identifier: '', password: message });
       } else {
-        setLoginErrors({ identifier: error.message || 'No se encontró la cuenta.', password: '' });
+        setLoginErrors({ identifier: message, password: '' });
       }
     }
   };
