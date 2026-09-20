@@ -1,9 +1,12 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Circle, Gavel, Headphones, LayoutDashboard, LifeBuoy, ShieldCheck, UserRound, Users } from 'lucide-react';
+import { ChevronDown, Gavel, Headphones, LayoutDashboard, LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
+import { Avatar, Brand, RoleBadge, RoleCard, UserLink, roleLabels } from './components/Common';
+import { pathForRoute, routeFromPath } from './routing';
+import { canAccessSection, sectionTitles } from './sections';
+import AuthScreen from './views/AuthScreen';
+import ForumView from './views/ForumView';
 
 const SESSION_KEY = 'forum-demo-session';
-const roleLabels = { creator: 'Creador', admin: 'Administrador', moderator: 'Moderador', support: 'Soporte', member: 'Miembro' };
-const roleIcons = { creator: ShieldCheck, admin: ShieldCheck, moderator: Gavel, support: Headphones, member: UserRound };
 const roleDescriptions = {
   creator: 'Control total, gestión de cuentas y reinicio de datos.',
   admin: 'Acceso total, gestión de roles y configuración.',
@@ -20,18 +23,19 @@ const submitOnEnter = (event) => {
 };
 
 function App() {
+  const initialRoute = routeFromPath(window.location.pathname);
   const [db, setDb] = useState({ users: [], boards: [], threads: [], posts: [], supportMessages: [], supportReplies: [] });
   const [session, setSession] = useState(() => {
     const saved = localStorage.getItem(SESSION_KEY);
     return saved ? JSON.parse(saved) : null;
   });
-  const [view, setView] = useState('forum');
-  const [profileId, setProfileId] = useState(null);
+  const [view, setViewState] = useState(initialRoute.view);
+  const [profileId, setProfileId] = useState(initialRoute.profileId);
   const [authView, setAuthView] = useState('login');
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
   const [loginErrors, setLoginErrors] = useState({ identifier: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', username: '', email: '', password: '' });
-  const [selectedBoardId, setSelectedBoardId] = useState('general');
+  const [selectedBoardId, setSelectedBoardId] = useState(initialRoute.boardId || 'general');
   const [selectedThreadId, setSelectedThreadId] = useState(null);
   const [threadForm, setThreadForm] = useState({ title: '', content: '' });
   const [postDraft, setPostDraft] = useState('');
@@ -44,6 +48,19 @@ function App() {
   const [dialog, setDialog] = useState(null);
   const [userSearch, setUserSearch] = useState('');
   const [sanctionDialog, setSanctionDialog] = useState(null);
+
+  const setView = (nextView, options = {}) => {
+    const route = {
+      view: nextView,
+      boardId: options.boardId || selectedBoardId,
+      profileId: options.profileId ?? (nextView === 'profile' ? profileId : null),
+    };
+    const path = pathForRoute(route);
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
+    setViewState(nextView);
+    if (options.boardId) setSelectedBoardId(options.boardId);
+    if (Object.prototype.hasOwnProperty.call(options, 'profileId')) setProfileId(options.profileId);
+  };
 
   const parseResponse = async (response) => {
     const text = await response.text();
@@ -86,6 +103,17 @@ function App() {
 
   useEffect(() => {
     fetchForumData();
+  }, []);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const route = routeFromPath(window.location.pathname);
+      setViewState(route.view);
+      if (route.boardId) setSelectedBoardId(route.boardId);
+      setProfileId(route.profileId || null);
+    };
+    window.addEventListener('popstate', handleRouteChange);
+    return () => window.removeEventListener('popstate', handleRouteChange);
   }, []);
 
   useEffect(() => {
@@ -135,6 +163,11 @@ function App() {
   const isModerator = isAdmin || loggedUser?.role === 'moderator';
   const isSupport = isAdmin || loggedUser?.role === 'support';
 
+  useEffect(() => {
+    if (!loggedUser) return;
+    if (!canAccessSection(view, loggedUser)) setView('forum');
+  }, [loggedUser, view]);
+
   const boards = db.boards || [];
   const visibleThreads = useMemo(
     () => db.threads.filter((thread) => thread.boardId === selectedBoardId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
@@ -159,7 +192,7 @@ function App() {
       avatar: target?.avatar || '',
       bio: target?.bio || '',
     });
-    setView('profile');
+    setView('profile', { profileId: id });
   };
 
   const json = (body, method = 'POST') => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -399,7 +432,7 @@ function App() {
         <nav className="board-list">
           <p className="mini-label">Tablas de conversación</p>
           {boards.map((board) => (
-            <button key={board.id} className={`board-item ${selectedBoardId === board.id ? 'active' : ''}`} onClick={() => { setSelectedBoardId(board.id); setView('forum'); }}>
+            <button key={board.id} className={`board-item ${selectedBoardId === board.id ? 'active' : ''}`} onClick={() => setView('forum', { boardId: board.id })}>
               <span>{board.name}</span>
               <small>{db.threads.filter((thread) => thread.boardId === board.id).length}</small>
             </button>
@@ -408,7 +441,7 @@ function App() {
 
         <nav className="app-nav">
           <button onClick={() => setView('forum')} className={view === 'forum' ? 'active' : ''}><LayoutDashboard size={16} />Foro</button>
-          <button onClick={() => { setProfileId(loggedUser.id); setProfileForm(loggedUser); setView('profile'); }} className={view === 'profile' ? 'active' : ''}><UserRound size={16} />Mi perfil</button>
+          <button onClick={() => { setProfileId(loggedUser.id); setProfileForm(loggedUser); setView('profile', { profileId: loggedUser.id }); }} className={view === 'profile' ? 'active' : ''}><UserRound size={16} />Mi perfil</button>
           {isModerator && <button onClick={() => setView('moderation')} className={view === 'moderation' ? 'active' : ''}><Gavel size={16} />Moderación</button>}
           {isAdmin && <button onClick={() => setView('admin')} className={view === 'admin' ? 'active' : ''}><ShieldCheck size={16} />Administración</button>}
           {isCreator && <button onClick={() => setView('creator')} className={view === 'creator' ? 'active' : ''}><ShieldCheck size={16} />Creación</button>}
@@ -422,7 +455,7 @@ function App() {
         <header className="topbar">
           <div className="topbar-title">
             <p className="eyebrow">Espacio comunitario</p>
-            <h3>{view === 'forum' ? boards.find((board) => board.id === selectedBoardId)?.name : view === 'profile' ? 'Perfil' : view === 'admin' ? 'Administración' : view === 'creator' ? 'Panel de creación' : view === 'moderation' ? 'Moderación' : 'Soporte'}</h3>
+            <h3>{view === 'forum' ? boards.find((board) => board.id === selectedBoardId)?.name : sectionTitles[view]}</h3>
             <small>{roleDescriptions[loggedUser.role]}</small>
           </div>
           <div className="topbar-actions">
@@ -445,184 +478,6 @@ function App() {
         {sanctionDialog && <SanctionDialog sanction={sanctionDialog} onClose={() => setSanctionDialog(null)} onBan={handleBan} onMute={handleMute} />}
       </main>
     </div>
-  );
-}
-
-function Brand() {
-  return <div className="brand-block sidebar-brand"><div className="logo">F</div><div><p className="eyebrow">Foro comunitario</p><h2>ForumBonito</h2></div></div>;
-}
-
-function Avatar({ user, small = false }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const avatar = user?.avatar?.trim();
-  return <span className={`avatar ${small ? 'small' : ''}`}>{avatar && !imageFailed ? <img src={avatar} alt={`Avatar de ${user.name}`} onError={() => setImageFailed(true)} /> : avatar || (user?.name || 'U').slice(0, 2).toUpperCase()}</span>;
-}
-
-function RoleBadge({ role }) {
-  const Icon = roleIcons[role] || UserRound;
-  return <span className={`role-badge role-${role}`}><Icon size={13} strokeWidth={2.4} />{roleLabels[role]}</span>;
-}
-
-function UserLink({ user, onClick }) {
-  if (!user) {
-    return <span className="user-link user-link-empty"><Avatar user={null} small /><span>Usuario</span><RoleBadge role="member" /></span>;
-  }
-  return <button className="user-link" onClick={onClick}><Avatar user={user} small /><span><strong>{user.name || 'Usuario'}</strong>{user.username && <small>{user.username}</small>}</span><RoleBadge role={user.role || 'member'} /></button>;
-}
-
-function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, loginErrors, setLoginErrors, registerForm, setRegisterForm, handleLogin, handleRegister }) {
-  return (
-    <div className="auth-screen">
-      <div className="auth-card">
-        <Brand />
-        <div className="auth-tabs">
-          <span className={`auth-tab-indicator ${authView === 'register' ? 'register' : ''}`} aria-hidden="true" />
-          <button className={authView === 'login' ? 'active' : ''} onClick={() => setAuthView('login')}>Iniciar sesión</button>
-          <button className={authView === 'register' ? 'active' : ''} onClick={() => setAuthView('register')}>Registro</button>
-        </div>
-        {authView === 'login' ? (
-          <form key="login" onSubmit={handleLogin} className="auth-form auth-form-login">
-            <h2>Accede a tu cuenta</h2>
-            <label className={loginErrors.identifier ? 'has-error' : ''}>Username o correo<input aria-invalid={Boolean(loginErrors.identifier)} value={loginForm.identifier} onChange={(event) => { setLoginForm({ ...loginForm, identifier: event.target.value }); setLoginErrors((current) => ({ ...current, identifier: '' })); }} placeholder="@tu_username" />{loginErrors.identifier && <span className="field-error" role="alert">{loginErrors.identifier}</span>}</label>
-            <label className={loginErrors.password ? 'has-error' : ''}>Contraseña<input aria-invalid={Boolean(loginErrors.password)} type="password" value={loginForm.password} onChange={(event) => { setLoginForm({ ...loginForm, password: event.target.value }); setLoginErrors((current) => ({ ...current, password: '' })); }} />{loginErrors.password && <span className="field-error" role="alert">{loginErrors.password}</span>}</label>
-            <button className="primary-btn">Entrar</button>
-          </form>
-        ) : (
-          <form key="register" onSubmit={handleRegister} className="auth-form auth-form-register">
-            <h2>Crear una cuenta</h2>
-            <label>Display name<input value={registerForm.name} onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })} /></label>
-            <label>Username único<input value={registerForm.username} onChange={(event) => setRegisterForm({ ...registerForm, username: event.target.value })} placeholder="@tu_username" /></label>
-            <label>Correo electrónico<input type="email" value={registerForm.email} onChange={(event) => setRegisterForm({ ...registerForm, email: event.target.value })} /></label>
-            <label>Contraseña<input type="password" value={registerForm.password} onChange={(event) => setRegisterForm({ ...registerForm, password: event.target.value })} /></label>
-            <button className="primary-btn">Registrarme</button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ForumView({ boards, selectedBoardId, activeThread, filteredThreads, threadForm, setThreadForm, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId }) {
-  return (
-    <>
-      <section className="thread-creator">
-        <h4>Nueva publicación</h4>
-        <form onSubmit={handleCreateThread}>
-          <input value={threadForm.title} onChange={(event) => setThreadForm({ ...threadForm, title: event.target.value })} placeholder="Título de tu tema" />
-          <textarea value={threadForm.content} onChange={(event) => setThreadForm({ ...threadForm, content: event.target.value })} onKeyDown={submitOnEnter} placeholder="Describe tu idea o pregunta..." rows="3" />
-          <button className="primary-btn">Publicar tema</button>
-        </form>
-      </section>
-
-      <div className="forum-layout">
-        <section className="thread-list-panel">
-          <div className="section-header"><h4>Temas activos</h4></div>
-          <div className="thread-list">
-            {filteredThreads.length ? filteredThreads.map((thread) => {
-              const threadAuthor = userMap[thread.authorId] || (loggedUser?.id === thread.authorId ? loggedUser : { id: thread.authorId, name: 'Usuario', role: 'member' });
-              return (
-                <button key={thread.id} className={`thread-card ${activeThread?.id === thread.id ? 'selected' : ''}`} onClick={() => setSelectedThreadId(thread.id)}>
-                  <div className="thread-header-row">
-                    <strong>{thread.title}</strong>
-                    <span>{thread.locked ? 'Bloqueado' : `${threadPosts.filter((post) => post.threadId === thread.id).length} respuestas`}</span>
-                  </div>
-                  <p>{thread.content}</p>
-                  <small>{threadAuthor.name} · {formatDate(thread.createdAt)}</small>
-                </button>
-              );
-            }) : <p className="empty-state">No hay temas para esta búsqueda.</p>}
-          </div>
-        </section>
-
-        <section className="thread-detail-panel">
-          {activeThread ? (
-            <>
-              <div className="discussion-header">
-                <div>
-                  <span className="topic-pill">{boards.find((board) => board.id === activeThread.boardId)?.name}</span>
-                  <h3>{activeThread.title}</h3>
-                  <small>Publicado por <button className="inline-link" onClick={() => openProfile(activeThread.authorId)}>{(userMap[activeThread.authorId] || (loggedUser?.id === activeThread.authorId ? loggedUser : { name: 'Usuario' })).name}</button> · {formatDate(activeThread.createdAt)}</small>
-                </div>
-                {isModerator && (
-                  <div className="action-row">
-                    <button className="ghost-btn small-btn" onClick={() => handleLockThread(activeThread)}>{activeThread.locked ? 'Desbloquear' : 'Bloquear'}</button>
-                    <button className="danger-btn small-btn" onClick={() => handleDeleteThread(activeThread)}>Eliminar</button>
-                  </div>
-                )}
-              </div>
-
-              <div className="discussion-body"><p>{activeThread.content}</p></div>
-
-              <div className="post-list">
-                {threadPosts.length ? threadPosts.map((post) => {
-                  const postAuthor = userMap[post.authorId] || (loggedUser?.id === post.authorId ? loggedUser : { id: post.authorId, name: 'Usuario', role: 'member' });
-                  return (
-                    <article key={post.id} className="post-card">
-                      <div className="post-meta">
-                        <UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} />
-                        <span>{formatDate(post.createdAt)}</span>
-                      </div>
-                      <p>{post.content}</p>
-                      <div className="action-row">
-                        {(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}
-                        {isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}
-                      </div>
-                    </article>
-                  );
-                }) : <p className="empty-state">Aún no hay respuestas en este tema.</p>}
-              </div>
-
-              {!activeThread.locked && (
-                <form onSubmit={handleAddPost} className="reply-form">
-                  <textarea value={postDraft} onChange={(event) => setPostDraft(event.target.value)} onKeyDown={submitOnEnter} placeholder="Escribe tu respuesta..." rows="4" />
-                  <button className="primary-btn">Responder</button>
-                </form>
-              )}
-            </>
-          ) : <p className="empty-state">Selecciona un tema para comenzar.</p>}
-        </section>
-
-        <ForumPresence users={users} loggedUser={loggedUser} openProfile={openProfile} />
-      </div>
-    </>
-  );
-}
-
-function ForumPresence({ users, loggedUser, openProfile }) {
-  const activeUsers = users.filter((user) => user.isOnline);
-  const inactiveUsers = users.filter((user) => !user.isOnline);
-  const teamUsers = activeUsers.filter((user) => ['support', 'moderator', 'admin', 'creator'].includes(user.role));
-
-  const renderUser = (user, inactive = false) => (
-    <button key={user.id} className={`presence-user ${inactive ? 'is-inactive' : ''}`} onClick={() => openProfile(user.id)}>
-      <Avatar user={user} small />
-      <span className="presence-user-copy"><strong>{user.name || 'Usuario'}</strong><small>{user.username || 'Sin username'}</small></span>
-      <RoleBadge role={user.role || 'member'} />
-      <Circle className="presence-dot" size={9} fill="currentColor" />
-    </button>
-  );
-
-  return (
-    <aside className="forum-presence">
-      <div className="presence-heading">
-        <div><span className="eyebrow">Comunidad</span><h4>Usuarios</h4></div>
-        <Users size={18} />
-      </div>
-      <p className="presence-caption">Conectados en este momento</p>
-      <section className="presence-group">
-        <div className="presence-group-heading"><span><i className="status-pulse active" />Activos</span><strong>{activeUsers.length}</strong></div>
-        {activeUsers.length ? activeUsers.map((user) => renderUser(user)) : <p className="presence-empty">No hay cuentas activas.</p>}
-      </section>
-      <section className="presence-group">
-        <div className="presence-group-heading"><span><i className="status-pulse inactive" />Inactivos</span><strong>{inactiveUsers.length}</strong></div>
-        {inactiveUsers.length ? inactiveUsers.map((user) => renderUser(user, true)) : <p className="presence-empty">Nadie inactivo.</p>}
-      </section>
-      <section className="presence-group presence-team">
-        <div className="presence-group-heading"><span><i className="status-pulse team" />Equipo</span><strong>{teamUsers.length}</strong></div>
-        {teamUsers.length ? teamUsers.map((user) => renderUser(user)) : <p className="presence-empty">No hay personal conectado.</p>}
-      </section>
-      <div className="presence-footer">Tu cuenta: <strong>{loggedUser?.username || 'Usuario'}</strong></div>
-    </aside>
   );
 }
 
@@ -720,19 +575,6 @@ function ModerationUserRow({ user, onOpenSanction, formatDate }) {
         <button className="mini-action" onClick={() => onOpenSanction(user, 'mute')}>{user.mutedUntil ? 'Cambiar mute' : 'Silenciar'}</button>
         <button className="mini-action danger-text" onClick={() => onOpenSanction(user, 'ban')}>{user.status === 'banned' ? 'Cambiar ban' : 'Banear'}</button>
       </div>
-    </div>
-  );
-}
-
-function RoleCard({ user, meta }) {
-  return (
-    <div className="role-user-card">
-      <Avatar user={user} small />
-      <div className="role-user-copy">
-        <strong>{user.name || user.username || 'Usuario'}</strong>
-        <small>{user.username || 'Username no disponible'} · {meta || user.email}</small>
-      </div>
-      <RoleBadge role={user.role} />
     </div>
   );
 }
