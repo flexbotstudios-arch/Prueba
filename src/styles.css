@@ -20,6 +20,11 @@
 html { scroll-behavior: smooth; }
 html, body, #root { margin: 0; min-height: 100%; min-height: 100vh; background: var(--soft); color: var(--ink); }
 body { min-height: 100vh; }
+* { scrollbar-width: thin; scrollbar-color: #31516c #0b1524; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { border-radius: 10px; background: #0b1524; }
+*::-webkit-scrollbar-thumb { border: 2px solid #0b1524; border-radius: 10px; background: #31516c; }
+*::-webkit-scrollbar-thumb:hover { background: #45d6c2; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 button, input, textarea, select { border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); }
@@ -35,13 +40,13 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .brand-block h1, .brand-block h2, .topbar h3, .thread-creator h4, .section-header h4, .discussion-header h3 { margin: 0; }
 .brand-block h2 { font-size: 1.08rem; }
 .eyebrow, .mini-label { margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: .68rem; font-weight: 700; }
-.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 30px 0 22px; padding: 4px; border-radius: 12px; background: #f1f4f8; }
-.auth-tabs button { padding: 10px; border: 0; background: transparent; color: var(--muted); }
-.auth-tabs button { position: relative; overflow: hidden; transition: color .25s ease, transform .25s ease, background-color .25s ease; }
-.auth-tabs button.active { border-radius: 8px; color: var(--ink); background: white; box-shadow: 0 2px 9px rgba(23, 32, 51, .08); animation: authTabSlide .32s ease both; }
+.auth-tabs { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 30px 0 22px; padding: 4px; border-radius: 12px; background: #f1f4f8; isolation: isolate; }
+.auth-tab-indicator { position: absolute; z-index: 0; top: 4px; left: 4px; width: calc(50% - 7px); height: calc(100% - 8px); border-radius: 8px; background: #fff; box-shadow: 0 2px 9px rgba(23,32,51,.08); transform: translateX(0); transition: transform .36s cubic-bezier(.22,.8,.3,1); }
+.auth-tab-indicator.register { transform: translateX(calc(100% + 6px)); }
+.auth-tabs button { position: relative; z-index: 1; padding: 10px; border: 0; background: transparent; color: var(--muted); transition: color .3s ease; }
+.auth-tabs button.active { color: var(--ink); }
 .auth-form { display: flex; flex-direction: column; gap: 15px; }
-.auth-form-login { animation: authFormFromLeft .38s cubic-bezier(.22,.8,.3,1) both; }
-.auth-form-register { animation: authFormFromRight .38s cubic-bezier(.22,.8,.3,1) both; }
+.auth-form-login, .auth-form-register { animation: authFormFade .26s ease both; }
 .auth-form h2 { margin: 0 0 5px; font-size: 1.55rem; }
 .auth-form label, .profile-form label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: .88rem; }
 .demo-credentials { margin: 2px 0 0; color: var(--muted); text-align: center; font-size: .8rem; }
@@ -261,6 +266,8 @@ html, body, #root { background: #080e18; color: var(--ink); }
 .auth-card, .thread-creator, .thread-list-panel, .thread-detail-panel, .panel-card, .ticket-layout, .profile-hero { background: #111a29; border-color: var(--line); box-shadow: var(--shadow); }
 .auth-tabs, .thread-card, .post-card, .activity-list div, .admin-user-row, .moderation-item { background: #0d1624; border-color: var(--line); }
 .auth-tabs button.active, .ticket-item:hover, .ticket-item.active { color: var(--ink); background: #1b293d; }
+.auth-tabs button.active { background: transparent; }
+.auth-tab-indicator { background: #1b293d; box-shadow: 0 2px 9px rgba(0,0,0,.2); }
 button, input, textarea, select { color: var(--ink); background: #0c1523; border-color: var(--line); }
 input::placeholder, textarea::placeholder { color: #64758c; }
 .primary-btn { color: #071517; background: var(--accent); border-color: var(--accent); }
@@ -360,9 +367,7 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 @keyframes panelFloat { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes presenceReveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes statusPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(69,214,194,.1); } 50% { box-shadow: 0 0 0 6px rgba(69,214,194,.03); } }
-@keyframes authFormFromLeft { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes authFormFromRight { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes authTabSlide { from { opacity: .72; transform: translateX(4px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes authFormFade { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

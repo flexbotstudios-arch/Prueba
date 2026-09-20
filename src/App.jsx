@@ -457,6 +457,7 @@ function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, registerFo
       <div className="auth-card">
         <Brand />
         <div className="auth-tabs">
+          <span className={`auth-tab-indicator ${authView === 'register' ? 'register' : ''}`} aria-hidden="true" />
           <button className={authView === 'login' ? 'active' : ''} onClick={() => setAuthView('login')}>Iniciar sesión</button>
           <button className={authView === 'register' ? 'active' : ''} onClick={() => setAuthView('register')}>Registro</button>
         </div>
