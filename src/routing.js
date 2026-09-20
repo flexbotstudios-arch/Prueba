@@ -23,7 +23,7 @@ export const pathForRoute = ({ view, boardId = 'general', profileId = null }) =>
   if (panelRoutes[view]) return panelRoutes[view];
   if (view === 'support') return '/soporte';
   if (view === 'profile') return profileId ? `/perfil/${profileId}` : '/perfil';
-  if (view === 'forbidden') return '/errores/403';
+  if (view === 'forbidden') return '/errores/404';
   if (view === 'not-found') return '/errores/404';
   return '/tablas/general';
 };

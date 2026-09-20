@@ -170,7 +170,7 @@ function App() {
 
   useEffect(() => {
     if (!loggedUser) return;
-    if (!canAccessSection(view, loggedUser)) setView('forbidden');
+    if (!canAccessSection(view, loggedUser)) setView('not-found');
   }, [loggedUser, view]);
 
   const boards = db.boards || [];
