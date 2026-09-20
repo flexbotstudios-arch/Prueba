@@ -37,8 +37,11 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .eyebrow, .mini-label { margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: .68rem; font-weight: 700; }
 .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 30px 0 22px; padding: 4px; border-radius: 12px; background: #f1f4f8; }
 .auth-tabs button { padding: 10px; border: 0; background: transparent; color: var(--muted); }
-.auth-tabs button.active { border-radius: 8px; color: var(--ink); background: white; box-shadow: 0 2px 9px rgba(23, 32, 51, .08); }
+.auth-tabs button { position: relative; overflow: hidden; transition: color .25s ease, transform .25s ease, background-color .25s ease; }
+.auth-tabs button.active { border-radius: 8px; color: var(--ink); background: white; box-shadow: 0 2px 9px rgba(23, 32, 51, .08); animation: authTabSlide .32s ease both; }
 .auth-form { display: flex; flex-direction: column; gap: 15px; }
+.auth-form-login { animation: authFormFromLeft .38s cubic-bezier(.22,.8,.3,1) both; }
+.auth-form-register { animation: authFormFromRight .38s cubic-bezier(.22,.8,.3,1) both; }
 .auth-form h2 { margin: 0 0 5px; font-size: 1.55rem; }
 .auth-form label, .profile-form label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: .88rem; }
 .demo-credentials { margin: 2px 0 0; color: var(--muted); text-align: center; font-size: .8rem; }
@@ -357,6 +360,14 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 @keyframes panelFloat { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes presenceReveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes statusPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(69,214,194,.1); } 50% { box-shadow: 0 0 0 6px rgba(69,214,194,.03); } }
+@keyframes authFormFromLeft { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes authFormFromRight { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes authTabSlide { from { opacity: .72; transform: translateX(4px); } to { opacity: 1; transform: translateX(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
 
 @media (max-width: 900px) {
   .sidebar { border-right: 0; border-bottom: 1px solid #1c2b40; }

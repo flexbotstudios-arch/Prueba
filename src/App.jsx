@@ -461,14 +461,14 @@ function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, registerFo
           <button className={authView === 'register' ? 'active' : ''} onClick={() => setAuthView('register')}>Registro</button>
         </div>
         {authView === 'login' ? (
-          <form onSubmit={handleLogin} className="auth-form">
+          <form key="login" onSubmit={handleLogin} className="auth-form auth-form-login">
             <h2>Accede a tu cuenta</h2>
             <label>Username o correo<input value={loginForm.identifier} onChange={(event) => setLoginForm({ ...loginForm, identifier: event.target.value })} placeholder="@tu_username" /></label>
             <label>Contraseña<input type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} /></label>
             <button className="primary-btn">Entrar</button>
           </form>
         ) : (
-          <form onSubmit={handleRegister} className="auth-form">
+          <form key="register" onSubmit={handleRegister} className="auth-form auth-form-register">
             <h2>Crear una cuenta</h2>
             <label>Display name<input value={registerForm.name} onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })} /></label>
             <label>Username único<input value={registerForm.username} onChange={(event) => setRegisterForm({ ...registerForm, username: event.target.value })} placeholder="@tu_username" /></label>
