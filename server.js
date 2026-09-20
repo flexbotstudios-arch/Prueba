@@ -15,6 +15,7 @@ const SQL = await initSqlJs();
 const sessions = new Map();
 const authAttempts = new Map();
 const SESSION_TTL = 8 * 60 * 60 * 1000;
+const PRESENCE_TTL = 45 * 1000;
 const CREATOR_EMAIL = 'rexgamor613@gmail.com';
 const CREATOR_USERNAMES = new Set(['@mikashiiiok', '@rexgamor613']);
 const CREATOR_USERNAME = '@rexgamor613';
@@ -43,8 +44,22 @@ const verifyPassword = (password, storedHash) => {
 
 const createSession = (userId) => {
   const token = randomBytes(32).toString('hex');
-  sessions.set(token, { userId: Number(userId), expiresAt: Date.now() + SESSION_TTL });
+  const now = Date.now();
+  sessions.set(token, { userId: Number(userId), expiresAt: now + SESSION_TTL, lastSeenAt: now });
   return token;
+};
+
+const getOnlineUserIds = () => {
+  const now = Date.now();
+  const onlineUserIds = new Set();
+  sessions.forEach((session, token) => {
+    if (session.expiresAt <= now) {
+      sessions.delete(token);
+    } else if (now - (session.lastSeenAt || 0) < PRESENCE_TTL) {
+      onlineUserIds.add(session.userId);
+    }
+  });
+  return onlineUserIds;
 };
 
 const consumeAuthAttempt = (key) => {
@@ -264,6 +279,7 @@ const actorFromRequest = (req) => {
     if (token) sessions.delete(token);
     return null;
   }
+  session.lastSeenAt = Date.now();
   return getUser(session.userId);
 };
 const requireRole = (req, res, roles) => {
@@ -286,28 +302,32 @@ const requireAuth = (req, res) => {
   }
   return actor;
 };
-const getForumData = () => ({
-  ...(() => {
+const getForumData = () => {
+  const onlineUserIds = getOnlineUserIds();
+  return {
+    ...(() => {
     const now = new Date().toISOString();
     runSql("UPDATE users SET status = 'active', bannedUntil = NULL, banReason = '' WHERE bannedUntil IS NOT NULL AND bannedUntil <= ?", [now]);
     runSql("UPDATE users SET mutedUntil = NULL, muteReason = '' WHERE mutedUntil IS NOT NULL AND mutedUntil <= ?", [now]);
     return {};
-  })(),
-  users: queryAll('SELECT id, name, username, email, role, avatar, bio, createdAt, status, mutedUntil, muteReason, bannedUntil, banReason FROM users ORDER BY id ASC').map((user) => ({
-    ...user,
-    name: normalizeText(user.name) || normalizeText(user.username) || 'Usuario',
-    username: normalizeText(user.username) || `@user${user.id}`,
-  })),
-  boards: queryAll('SELECT * FROM boards ORDER BY name ASC'),
-  threads: queryAll('SELECT * FROM threads ORDER BY createdAt DESC'),
-  posts: queryAll('SELECT * FROM posts ORDER BY createdAt ASC'),
-  supportMessages: queryAll('SELECT * FROM support_messages ORDER BY updatedAt DESC'),
-  supportReplies: queryAll('SELECT * FROM support_replies ORDER BY createdAt ASC'),
-});
+    })(),
+    users: queryAll('SELECT id, name, username, email, role, avatar, bio, createdAt, status, mutedUntil, muteReason, bannedUntil, banReason FROM users ORDER BY id ASC').map((user) => ({
+      ...user,
+      name: normalizeText(user.name) || normalizeText(user.username) || 'Usuario',
+      username: normalizeText(user.username) || `@user${user.id}`,
+      isOnline: onlineUserIds.has(user.id),
+    })),
+    boards: queryAll('SELECT * FROM boards ORDER BY name ASC'),
+    threads: queryAll('SELECT * FROM threads ORDER BY createdAt DESC'),
+    posts: queryAll('SELECT * FROM posts ORDER BY createdAt ASC'),
+    supportMessages: queryAll('SELECT * FROM support_messages ORDER BY updatedAt DESC'),
+    supportReplies: queryAll('SELECT * FROM support_replies ORDER BY createdAt ASC'),
+  };
+};
 
 app.get('/api/data', (req, res) => {
-  const data = getForumData();
   const actor = actorFromRequest(req);
+  const data = getForumData();
   if (!hasRole(actor, ['admin', 'creator'])) {
     data.users = data.users.map((user) => {
       if (user.role === 'creator') {

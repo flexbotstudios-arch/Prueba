@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Gavel, Headphones, LayoutDashboard, LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
+import { ChevronDown, Circle, Gavel, Headphones, LayoutDashboard, LifeBuoy, ShieldCheck, UserRound, Users } from 'lucide-react';
 
 const SESSION_KEY = 'forum-demo-session';
 const roleLabels = { creator: 'Creador', admin: 'Administrador', moderator: 'Moderador', support: 'Soporte', member: 'Miembro' };
@@ -403,7 +403,7 @@ function App() {
         </header>
 
         <div className="view-transition" key={`${view}-${selectedBoardId}-${profileId || ''}`}>
-          {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} />}
+          {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} />}
           {view === 'profile' && <ProfileView user={profileUser} isOwn={profileUser?.id === loggedUser.id} form={profileForm} setForm={setProfileForm} onSave={handleProfileSave} threads={profileThreads} posts={profilePosts} formatDate={formatDate} roleLabels={roleLabels} />}
           {view === 'moderation' && <ModerationView users={searchedUsers} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} onBan={handleBan} onMute={handleMute} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
@@ -471,7 +471,7 @@ function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, registerFo
   );
 }
 
-function ForumView({ boards, selectedBoardId, activeThread, filteredThreads, threadForm, setThreadForm, handleCreateThread, threadPosts, userMap, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId }) {
+function ForumView({ boards, selectedBoardId, activeThread, filteredThreads, threadForm, setThreadForm, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId }) {
   return (
     <>
       <section className="thread-creator">
@@ -550,8 +550,48 @@ function ForumView({ boards, selectedBoardId, activeThread, filteredThreads, thr
             </>
           ) : <p className="empty-state">Selecciona un tema para comenzar.</p>}
         </section>
+
+        <ForumPresence users={users} loggedUser={loggedUser} openProfile={openProfile} />
       </div>
     </>
+  );
+}
+
+function ForumPresence({ users, loggedUser, openProfile }) {
+  const activeUsers = users.filter((user) => user.isOnline);
+  const inactiveUsers = users.filter((user) => !user.isOnline);
+  const teamUsers = activeUsers.filter((user) => ['support', 'moderator', 'admin', 'creator'].includes(user.role));
+
+  const renderUser = (user, inactive = false) => (
+    <button key={user.id} className={`presence-user ${inactive ? 'is-inactive' : ''}`} onClick={() => openProfile(user.id)}>
+      <Avatar user={user} small />
+      <span className="presence-user-copy"><strong>{user.name || 'Usuario'}</strong><small>{user.username || 'Sin username'}</small></span>
+      <RoleBadge role={user.role || 'member'} />
+      <Circle className="presence-dot" size={9} fill="currentColor" />
+    </button>
+  );
+
+  return (
+    <aside className="forum-presence">
+      <div className="presence-heading">
+        <div><span className="eyebrow">Comunidad</span><h4>Usuarios</h4></div>
+        <Users size={18} />
+      </div>
+      <p className="presence-caption">Conectados en este momento</p>
+      <section className="presence-group">
+        <div className="presence-group-heading"><span><i className="status-pulse active" />Activos</span><strong>{activeUsers.length}</strong></div>
+        {activeUsers.length ? activeUsers.map((user) => renderUser(user)) : <p className="presence-empty">No hay cuentas activas.</p>}
+      </section>
+      <section className="presence-group">
+        <div className="presence-group-heading"><span><i className="status-pulse inactive" />Inactivos</span><strong>{inactiveUsers.length}</strong></div>
+        {inactiveUsers.length ? inactiveUsers.map((user) => renderUser(user, true)) : <p className="presence-empty">Nadie inactivo.</p>}
+      </section>
+      <section className="presence-group presence-team">
+        <div className="presence-group-heading"><span><i className="status-pulse team" />Equipo</span><strong>{teamUsers.length}</strong></div>
+        {teamUsers.length ? teamUsers.map((user) => renderUser(user)) : <p className="presence-empty">No hay personal conectado.</p>}
+      </section>
+      <div className="presence-footer">Tu cuenta: <strong>{loggedUser?.username || 'Usuario'}</strong></div>
+    </aside>
   );
 }
 

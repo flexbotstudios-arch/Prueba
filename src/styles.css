@@ -74,7 +74,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .thread-creator, .page-view { max-width: 1180px; margin: 0 auto; }
 .thread-creator { padding: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(26,43,70,.04); }
 .thread-creator form, .board-form, .support-form, .ticket-reply { display: flex; flex-direction: column; gap: 11px; margin-top: 13px; }
-.forum-layout { display: grid; grid-template-columns: minmax(245px, .75fr) minmax(0, 1.5fr); gap: 18px; max-width: 1180px; margin: 18px auto 0; }
+.forum-layout { display: grid; grid-template-columns: minmax(210px, .72fr) minmax(0, 1.55fr) minmax(220px, .78fr); gap: 18px; max-width: 1180px; margin: 18px auto 0; align-items: start; }
 .thread-list-panel, .thread-detail-panel, .panel-card { min-width: 0; padding: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(26,43,70,.035); }
 .section-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
 .thread-list, .post-list { display: flex; flex-direction: column; gap: 9px; }
@@ -96,6 +96,34 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .action-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 7px; }
 .inline-link { padding: 0; border: 0; color: var(--accent-dark); text-decoration: underline; background: transparent; }
 .empty-state { margin: 0; padding: 22px 10px; color: var(--muted); text-align: center; }
+.forum-presence { min-width: 0; padding: 17px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: 0 8px 24px rgba(26,43,70,.035); animation: panelFloat .6s .12s ease both; }
+.presence-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.presence-heading h4 { margin: 3px 0 0; font-size: 1.05rem; }
+.presence-heading > svg { color: var(--accent); }
+.presence-caption { margin: 11px 0 15px; color: var(--muted); font-size: .78rem; }
+.presence-group { padding: 12px 0; border-top: 1px solid rgba(38,54,76,.72); }
+.presence-group:first-of-type { border-top: 0; }
+.presence-group-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--muted); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.presence-group-heading span { display: inline-flex; align-items: center; gap: 6px; }
+.presence-group-heading strong { color: var(--ink); }
+.status-pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.status-pulse.active { background: #45d6c2; box-shadow: 0 0 0 4px rgba(69,214,194,.1); animation: statusPulse 2s ease-in-out infinite; }
+.status-pulse.inactive { background: #718096; }
+.status-pulse.team { background: #b98cff; box-shadow: 0 0 0 4px rgba(185,140,255,.1); }
+.presence-user { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 7px; border: 1px solid transparent; color: var(--ink); text-align: left; background: transparent; animation: presenceReveal .35s ease both; }
+.presence-user:hover { border-color: rgba(69,214,194,.24); background: rgba(69,214,194,.07); transform: translateX(3px); }
+.presence-user-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 1px; }
+.presence-user-copy strong, .presence-user-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presence-user-copy strong { font-size: .8rem; }
+.presence-user-copy small { color: var(--muted); font-size: .7rem; }
+.presence-user .role-badge { margin-left: auto; }
+.presence-dot { color: #45d6c2; }
+.presence-user.is-inactive { opacity: .62; }
+.presence-user.is-inactive .presence-dot { color: #718096; }
+.presence-empty { margin: 8px 0 2px; color: var(--muted); font-size: .76rem; }
+.presence-team { border-top-color: rgba(185,140,255,.28); }
+.presence-footer { margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: .72rem; }
+.presence-footer strong { color: var(--accent-dark); }
 
 .avatar { flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; overflow: hidden; border-radius: 50%; color: white; background: #318b83; font-weight: 800; }
 .avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -159,6 +187,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .loading-screen { min-height: 100vh; display: grid; place-items: center; color: var(--muted); }
 
+@media (max-width: 1100px) { .forum-layout { grid-template-columns: minmax(210px, .75fr) minmax(0, 1.35fr); } .forum-presence { grid-column: 1 / -1; } .presence-group { display: inline-block; width: 49%; vertical-align: top; padding-right: 14px; } .presence-group + .presence-group { padding-left: 14px; border-top: 0; border-left: 1px solid var(--line); } }
 @media (max-width: 900px) { .forum-app { grid-template-columns: 1fr; } .sidebar { position: static; height: auto; padding: 16px; } .sidebar-brand { margin-bottom: 15px !important; } .board-list, .app-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .ticket-layout { height: 70vh; min-height: 480px; grid-template-columns: 1fr; } .ticket-sidebar { border-right: 0; border-bottom: 1px solid var(--line); } .ticket-item { width: auto; display: inline-flex; margin: 0 4px 4px 0; } }
 @media (max-width: 680px) { .main-panel { padding: 20px 13px; } .topbar, .discussion-header, .ticket-header, .page-heading { flex-direction: column; } .topbar-actions { width: 100%; min-width: 0; } .topbar-actions input { max-width: none; } .forum-layout, .profile-grid { grid-template-columns: 1fr; } .profile-hero { align-items: flex-start; } .ticket-message { max-width: 94%; } .moderation-controls { justify-content: flex-start; } }
 
@@ -271,6 +300,9 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 @keyframes counterOrbit { to { transform: rotate(-360deg); } }
 @keyframes viewEnter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scrollCue { 0%, 100% { opacity: .58; transform: translateY(0); } 50% { opacity: 1; transform: translateY(4px); } }
+@keyframes panelFloat { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes presenceReveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes statusPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(69,214,194,.1); } 50% { box-shadow: 0 0 0 6px rgba(69,214,194,.03); } }
 
 @media (max-width: 900px) {
   .sidebar { border-right: 0; border-bottom: 1px solid #1c2b40; }
