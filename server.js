@@ -94,6 +94,19 @@ const queryAll = (query, params = []) => {
 const queryOne = (query, params = []) => queryAll(query, params)[0] || null;
 const persistDb = () => fs.writeFileSync(dbFilePath, Buffer.from(db.export()));
 const normalizeText = (value) => (value == null ? '' : String(value).trim());
+const createPublicId = (counter) => {
+  let publicId = '';
+  do {
+    const uniquePart = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+    publicId = `${uniquePart}-${String(counter).padStart(6, '0')}`;
+  } while (queryOne('SELECT id FROM users WHERE publicId = ?', [publicId]));
+  return publicId;
+};
+const assignPublicId = (userId) => {
+  const publicId = createPublicId(userId);
+  runSql('UPDATE users SET publicId = ? WHERE id = ?', [publicId, Number(userId)]);
+  return publicId;
+};
 
 const initializeDatabase = () => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -175,6 +188,9 @@ const initializeDatabase = () => {
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)');
 
   runSql("UPDATE users SET username = '@user' || id WHERE username IS NULL OR username = ''", []);
+  addColumn('publicId', "TEXT DEFAULT ''");
+  queryAll("SELECT id FROM users WHERE publicId IS NULL OR publicId = ''").forEach((user) => assignPublicId(user.id));
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_public_id ON users(publicId)');
   runSql("UPDATE users SET createdAt = ? WHERE createdAt = '' OR createdAt IS NULL", [new Date().toISOString()]);
   queryAll("SELECT id, password FROM users WHERE passwordHash IS NULL OR passwordHash = ''").forEach((user) => {
     if (user.password && user.password !== '[protected]') {
@@ -189,6 +205,7 @@ const initializeDatabase = () => {
     const statement = db.prepare('INSERT INTO users (name, username, email, password, passwordHash, role, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
     statement.run([CREATOR_NAME, CREATOR_USERNAME, CREATOR_EMAIL, '[protected]', hashPassword(CREATOR_INITIAL_PASSWORD), 'creator', now]);
     statement.free();
+    assignPublicId(db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]);
   } else if (creator.role !== 'creator') {
     runSql('UPDATE users SET role = ? WHERE id = ?', ['creator', creator.id]);
   }
@@ -234,6 +251,7 @@ app.use(express.json({ limit: '32kb' }));
 
 const serializeUser = (user) => ({
   id: user.id,
+  publicId: user.publicId,
   name: user.name,
   username: user.username,
   email: user.email,
@@ -311,7 +329,7 @@ const getForumData = () => {
     runSql("UPDATE users SET mutedUntil = NULL, muteReason = '' WHERE mutedUntil IS NOT NULL AND mutedUntil <= ?", [now]);
     return {};
     })(),
-    users: queryAll('SELECT id, name, username, email, role, avatar, bio, createdAt, status, mutedUntil, muteReason, bannedUntil, banReason FROM users ORDER BY id ASC').map((user) => ({
+    users: queryAll('SELECT id, publicId, name, username, email, role, avatar, bio, createdAt, status, mutedUntil, muteReason, bannedUntil, banReason FROM users ORDER BY id ASC').map((user) => ({
       ...user,
       name: normalizeText(user.name) || normalizeText(user.username) || 'Usuario',
       username: normalizeText(user.username) || `@user${user.id}`,
@@ -357,7 +375,9 @@ app.post('/api/register', (req, res) => {
     const statement = db.prepare('INSERT INTO users (name, username, email, password, passwordHash, role, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
     statement.run([name, username, email, '[protected]', hashPassword(password), role, now]);
     statement.free();
-    const user = getUser(db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]);
+    const userId = db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0];
+    assignPublicId(userId);
+    const user = getUser(userId);
     persistDb();
     return res.status(201).json({ user: serializeUser(user), token: createSession(user.id) });
   } catch (error) {

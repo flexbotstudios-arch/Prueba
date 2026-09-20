@@ -4,6 +4,7 @@ import { Avatar, Brand, RoleBadge, RoleCard, UserLink, roleLabels } from './comp
 import { pathForRoute, routeFromPath } from './routing';
 import { canAccessSection, sectionTitles } from './sections';
 import AuthScreen from './views/AuthScreen';
+import ErrorPage from './views/ErrorPage';
 import ForumView from './views/ForumView';
 
 const SESSION_KEY = 'forum-demo-session';
@@ -30,6 +31,7 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [view, setViewState] = useState(initialRoute.view);
+  const [errorCode, setErrorCode] = useState(initialRoute.errorCode || 404);
   const [profileId, setProfileId] = useState(initialRoute.profileId);
   const [authView, setAuthView] = useState('login');
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
@@ -58,6 +60,8 @@ function App() {
     const path = pathForRoute(route);
     if (window.location.pathname !== path) window.history.pushState({}, '', path);
     setViewState(nextView);
+    if (nextView === 'forbidden') setErrorCode(403);
+    if (nextView === 'not-found') setErrorCode(404);
     if (options.boardId) setSelectedBoardId(options.boardId);
     if (Object.prototype.hasOwnProperty.call(options, 'profileId')) setProfileId(options.profileId);
   };
@@ -109,6 +113,7 @@ function App() {
     const handleRouteChange = () => {
       const route = routeFromPath(window.location.pathname);
       setViewState(route.view);
+      if (route.errorCode) setErrorCode(route.errorCode);
       if (route.boardId) setSelectedBoardId(route.boardId);
       setProfileId(route.profileId || null);
     };
@@ -165,7 +170,7 @@ function App() {
 
   useEffect(() => {
     if (!loggedUser) return;
-    if (!canAccessSection(view, loggedUser)) setView('forum');
+    if (!canAccessSection(view, loggedUser)) setView('forbidden');
   }, [loggedUser, view]);
 
   const boards = db.boards || [];
@@ -177,22 +182,23 @@ function App() {
   const threadPosts = activeThread ? db.posts.filter((post) => post.threadId === activeThread.id && post.status !== 'hidden').sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) : [];
   const filteredThreads = visibleThreads.filter((thread) => `${thread.title} ${thread.content}`.toLowerCase().includes(searchQuery.toLowerCase()));
   const hiddenPosts = db.posts.filter((post) => post.status === 'hidden');
-  const profileUser = userMap[profileId] || loggedUser;
+  const profileUser = db.users.find((user) => String(user.id) === String(profileId) || user.publicId === profileId) || loggedUser;
   const profileThreads = db.threads.filter((thread) => thread.authorId === profileUser?.id);
   const profilePosts = db.posts.filter((post) => post.authorId === profileUser?.id);
 
   const formatDate = (value) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
   const avatarText = (user) => user?.avatar || (user?.name || 'U').slice(0, 2).toUpperCase();
   const openProfile = (id) => {
-    setProfileId(id);
-    const target = userMap[id] || loggedUser;
+    const target = userMap[id] || db.users.find((user) => user.publicId === id) || loggedUser;
+    const profileKey = target?.publicId || target?.id || id;
+    setProfileId(profileKey);
     setProfileForm({
       name: target?.name || '',
       username: target?.username || '',
       avatar: target?.avatar || '',
       bio: target?.bio || '',
     });
-    setView('profile', { profileId: id });
+    setView('profile', { profileId: profileKey });
   };
 
   const json = (body, method = 'POST') => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -414,6 +420,7 @@ function App() {
     }
   };
 
+  if (view === 'not-found' || view === 'forbidden') return <ErrorPage code={errorCode} onHome={() => setView('forum')} />;
   if (!session) return <AuthScreen authView={authView} setAuthView={setAuthView} loginForm={loginForm} setLoginForm={setLoginForm} loginErrors={loginErrors} setLoginErrors={setLoginErrors} registerForm={registerForm} setRegisterForm={setRegisterForm} handleLogin={handleLogin} handleRegister={handleRegister} />;
   if (loading) return <div className="loading-screen"><div className="loading-orbit"><div className="logo">F</div></div><strong>Preparando tu espacio</strong><span>Un momento...</span></div>;
 
@@ -441,7 +448,7 @@ function App() {
 
         <nav className="app-nav">
           <button onClick={() => setView('forum')} className={view === 'forum' ? 'active' : ''}><LayoutDashboard size={16} />Foro</button>
-          <button onClick={() => { setProfileId(loggedUser.id); setProfileForm(loggedUser); setView('profile', { profileId: loggedUser.id }); }} className={view === 'profile' ? 'active' : ''}><UserRound size={16} />Mi perfil</button>
+          <button onClick={() => { const profileKey = loggedUser.publicId || loggedUser.id; setProfileId(profileKey); setProfileForm(loggedUser); setView('profile', { profileId: profileKey }); }} className={view === 'profile' ? 'active' : ''}><UserRound size={16} />Mi perfil</button>
           {isModerator && <button onClick={() => setView('moderation')} className={view === 'moderation' ? 'active' : ''}><Gavel size={16} />Moderación</button>}
           {isAdmin && <button onClick={() => setView('admin')} className={view === 'admin' ? 'active' : ''}><ShieldCheck size={16} />Administración</button>}
           {isCreator && <button onClick={() => setView('creator')} className={view === 'creator' ? 'active' : ''}><ShieldCheck size={16} />Creación</button>}
@@ -499,6 +506,7 @@ function ProfileView({ user, isOwn, form, setForm, onSave, threads, posts, forma
         <div className="panel-card">
           <p className="mini-label">Información</p>
           <dl className="profile-facts">
+            <div><dt>ID público</dt><dd>{user.publicId || user.id}</dd></div>
             <div><dt>Username</dt><dd>{user.username}</dd></div>
             <div><dt>Cuenta creada</dt><dd>{formatDate(user.createdAt)}</dd></div>
             <div><dt>Publicaciones</dt><dd>{threads.length}</dd></div>
@@ -742,7 +750,8 @@ function CreatorView({ users, loggedUser, search, setSearch, formatDate, onReset
               </div>
               {expandedUserId === user.id && (
                 <dl className="account-details">
-                  <div><dt>ID</dt><dd>{user.id}</dd></div>
+                  <div><dt>ID público</dt><dd>{user.publicId || user.id}</dd></div>
+                  <div><dt>ID interno</dt><dd>{user.id}</dd></div>
                   <div><dt>Display name</dt><dd>{user.name || 'No disponible'}</dd></div>
                   <div><dt>Username</dt><dd>{user.username || 'No disponible'}</dd></div>
                   <div><dt>Correo</dt><dd>{user.email || 'Correo privado'}</dd></div>

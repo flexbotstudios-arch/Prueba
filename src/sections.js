@@ -5,6 +5,8 @@ export const sectionTitles = {
   admin: 'Administración',
   creator: 'Panel de creación',
   support: 'Soporte',
+  forbidden: 'Acceso restringido',
+  'not-found': 'Página no encontrada',
 };
 
 export const canAccessSection = (view, user) => {
