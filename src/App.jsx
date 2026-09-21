@@ -304,9 +304,12 @@ function App() {
   };
   const submitWarning = async () => {
     if (!warningDraft?.reason.trim()) return;
+    const warnedUserId = warningDraft.userId;
     try {
       await api('/api/warnings', json({ userId: warningDraft.userId, reason: warningDraft.reason }));
       setWarningDraft(null);
+      const historyResult = await api(`/api/warnings?userId=${warnedUserId}`);
+      setModerationHistory((current) => ({ ...current, [warnedUserId]: historyResult.warnings || [], openUserId: warnedUserId }));
       const result = await api('/api/reports');
       setReports(result.reports || []);
       await fetchForumData();
