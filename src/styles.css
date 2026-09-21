@@ -166,6 +166,12 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .avatar { flex: 0 0 auto; display: grid; place-items: center; width: 42px; height: 42px; overflow: hidden; border-radius: 50%; color: white; background: #318b83; font-weight: 800; }
 .avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.avatar-picker { position: relative; display: block; width: 72px; height: 72px; border: 0; border-radius: 50%; cursor: pointer; }
+.avatar-picker > .avatar { width: 72px; height: 72px; }
+.avatar-picker > span { position: absolute; right: -2px; bottom: -1px; display: grid; place-items: center; width: 25px; height: 25px; border: 2px solid #111a29; border-radius: 50%; color: #071517; background: var(--accent); }
+.avatar-picker:hover > .avatar { outline: 3px solid rgba(69,214,194,.3); }
+.avatar-picker.uploading { cursor: wait; opacity: .65; }
+.avatar-picker input { display: none; }
 .avatar.small { width: 29px; height: 29px; font-size: .68rem; }
 .role-badge { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; width: fit-content; padding: 3px 7px; border-radius: 5px; font-size: .68rem; font-weight: 800; line-height: 1; white-space: nowrap; }
 .role-admin { color: #8a5a00; background: #fff2c7; }
