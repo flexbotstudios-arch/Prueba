@@ -112,12 +112,14 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .content-image { display: block; width: min(100%, 560px); max-height: 460px; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; object-fit: contain; background: #0b1524; }
 .composer-box { position: relative; }
 .composer-box textarea { min-height: 52px; max-height: 220px; padding: 14px 56px; overflow-y: auto; field-sizing: content; }
+.composer-box textarea { scrollbar-width: none; }
+.composer-box textarea::-webkit-scrollbar { display: none; }
 .composer-box .attachment-picker { position: absolute; top: 50%; left: 10px; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); }
 .thread-creator .composer-box textarea, .reply-form .composer-box textarea { min-height: 52px; }
-.send-icon-btn { position: absolute; top: 50%; right: 10px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border: 1px solid var(--accent); border-radius: 50%; color: #071517; background: var(--accent); cursor: pointer; transform: translateY(-50%); }
+.send-icon-btn { position: absolute; top: 50%; right: 10px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border: 1px solid var(--accent); border-radius: 9px; color: #071517; background: var(--accent); cursor: pointer; transform: translateY(-50%); }
 .send-icon-btn:hover { background: #75e5d7; }
 .ticket-reply { position: relative; padding-right: 68px; }
-.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 50%; font-size: 0; transform: translateY(-50%); }
+.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 9px; font-size: 0; transform: translateY(-50%); }
 .ticket-reply .primary-btn::before { content: '↑'; color: #071517; font-size: 1.35rem; line-height: 1; }
 .attachment-button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; color: var(--accent-dark); background: #172337; cursor: pointer; }
 .attachment-button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
