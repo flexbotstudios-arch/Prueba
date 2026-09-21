@@ -9,6 +9,8 @@ import ForumView from './views/ForumView';
 import AdminView from './views/AdminView';
 import ModerationView from './views/ModerationView';
 import ProfileView from './views/ProfileView';
+import CreatorView from './views/CreatorView';
+import TicketSupportView from './views/TicketSupportView';
 
 const SESSION_KEY = 'forum-demo-session';
 const roleDescriptions = {
@@ -594,7 +596,7 @@ function UsernameEditor({ value, onChange }) {
   );
 }
 
-function CreatorView({ users, loggedUser, search, setSearch, formatDate, onReset }) {
+function LegacyCreatorView({ users, loggedUser, search, setSearch, formatDate, onReset }) {
   const [notice, setNotice] = useState(null);
   const [drafts, setDrafts] = useState({});
   const [expandedUserId, setExpandedUserId] = useState(null);
@@ -753,7 +755,7 @@ function SanctionDialog({ sanction, onClose, onBan, onMute }) {
   );
 }
 
-function TicketSupportView({ messages, replies, users, loggedUser, isSupport, form, setForm, onSubmit, onStatus, onReply, reply, setReply, selectedTicketId, setSelectedTicketId, formatDate }) {
+function LegacyTicketSupportView({ messages, replies, users, loggedUser, isSupport, form, setForm, onSubmit, onStatus, onReply, reply, setReply, selectedTicketId, setSelectedTicketId, formatDate }) {
   const tickets = isSupport ? messages : messages.filter((message) => message.userId === loggedUser.id);
   const selectedTicket = selectedTicketId ? tickets.find((ticket) => ticket.id === selectedTicketId) || null : null;
   const ticketReplies = selectedTicket ? replies.filter((item) => item.ticketId === selectedTicket.id) : [];
