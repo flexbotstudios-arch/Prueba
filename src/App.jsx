@@ -42,6 +42,7 @@ function App() {
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
   const [loginErrors, setLoginErrors] = useState({ identifier: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ name: '', username: '', email: '', password: '' });
+  const [registerErrors, setRegisterErrors] = useState({ name: '', username: '', email: '', password: '' });
   const [selectedBoardId, setSelectedBoardId] = useState(initialRoute.boardId || 'general');
   const [selectedThreadId, setSelectedThreadId] = useState(null);
   const [threadForm, setThreadForm] = useState({ title: '', content: '', imageUrl: '', attachment: null });
@@ -364,13 +365,32 @@ function App() {
 
   const handleRegister = async (event) => {
     event.preventDefault();
+    setRegisterErrors({ name: '', username: '', email: '', password: '' });
+    const username = registerForm.username.trim().startsWith('@') ? registerForm.username.trim() : `@${registerForm.username.trim()}`;
+    const errors = {
+      name: registerForm.name.trim() ? '' : 'Escribe tu nombre.',
+      username: username.length >= 4 && username.length <= 25 && /^@[a-z0-9_]{3,24}$/i.test(username) ? '' : 'Usa @ y entre 3 y 24 caracteres: @tu_usuario.',
+      email: /^\S+@\S+\.\S+$/.test(registerForm.email.trim()) ? '' : 'Escribe un correo válido.',
+      password: registerForm.password.length >= 6 ? '' : 'La contraseña debe tener al menos 6 caracteres.',
+    };
+    if (Object.values(errors).some(Boolean)) {
+      setRegisterErrors(errors);
+      return;
+    }
     try {
-      const result = await api('/api/register', json(registerForm));
+      const result = await api('/api/register', json({ ...registerForm, username }));
       setSession({ user: result.user, token: result.token });
       setRegisterForm({ name: '', username: '', email: '', password: '' });
+      setRegisterErrors({ name: '', username: '', email: '', password: '' });
       await fetchForumData();
     } catch (error) {
-      showNotice(error.message, 'No se pudo registrar');
+      const message = error.message || 'No se pudo registrar.';
+      const nextErrors = { name: '', username: '', email: '', password: '' };
+      if (message.toLowerCase().includes('username')) nextErrors.username = message;
+      else if (message.toLowerCase().includes('correo') || message.toLowerCase().includes('email')) nextErrors.email = message;
+      else if (message.toLowerCase().includes('contraseña')) nextErrors.password = message;
+      else nextErrors.name = message;
+      setRegisterErrors(nextErrors);
     }
   };
 
@@ -580,7 +600,7 @@ function App() {
   };
 
   if (view === 'not-found' || view === 'forbidden') return <ErrorPage code={errorCode} onHome={() => setView('forum')} />;
-  if (!session) return <AuthScreen authView={authView} setAuthView={setAuthView} loginForm={loginForm} setLoginForm={setLoginForm} loginErrors={loginErrors} setLoginErrors={setLoginErrors} registerForm={registerForm} setRegisterForm={setRegisterForm} handleLogin={handleLogin} handleRegister={handleRegister} />;
+  if (!session) return <AuthScreen authView={authView} setAuthView={setAuthView} loginForm={loginForm} setLoginForm={setLoginForm} loginErrors={loginErrors} setLoginErrors={setLoginErrors} registerForm={registerForm} setRegisterForm={setRegisterForm} registerErrors={registerErrors} setRegisterErrors={setRegisterErrors} handleLogin={handleLogin} handleRegister={handleRegister} />;
   if (loading) return <div className="loading-screen"><div className="loading-orbit"><div className="logo">F</div></div><strong>Preparando tu espacio</strong><span>Un momento...</span></div>;
 
   return (

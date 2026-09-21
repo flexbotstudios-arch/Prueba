@@ -1,6 +1,6 @@
 import { Brand } from '../components/Common';
 
-export default function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, loginErrors, setLoginErrors, registerForm, setRegisterForm, handleLogin, handleRegister }) {
+export default function AuthScreen({ authView, setAuthView, loginForm, setLoginForm, loginErrors, setLoginErrors, registerForm, setRegisterForm, registerErrors, setRegisterErrors, handleLogin, handleRegister }) {
   return (
     <div className="auth-screen">
       <div className="auth-card">
@@ -20,10 +20,10 @@ export default function AuthScreen({ authView, setAuthView, loginForm, setLoginF
         ) : (
           <form key="register" onSubmit={handleRegister} className="auth-form auth-form-register">
             <h2>Crear una cuenta</h2>
-            <label>Display name<input value={registerForm.name} onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })} /></label>
-            <label>Username único<input value={registerForm.username} onChange={(event) => setRegisterForm({ ...registerForm, username: event.target.value })} placeholder="@tu_username" /></label>
-            <label>Correo electrónico<input type="email" value={registerForm.email} onChange={(event) => setRegisterForm({ ...registerForm, email: event.target.value })} /></label>
-            <label>Contraseña<input type="password" value={registerForm.password} onChange={(event) => setRegisterForm({ ...registerForm, password: event.target.value })} /></label>
+            <label className={registerErrors.name ? 'has-error' : ''}>Display name<input aria-invalid={Boolean(registerErrors.name)} value={registerForm.name} onChange={(event) => { setRegisterForm({ ...registerForm, name: event.target.value }); setRegisterErrors((current) => ({ ...current, name: '' })); }} />{registerErrors.name && <span className="field-error" role="alert">{registerErrors.name}</span>}</label>
+            <label className={registerErrors.username ? 'has-error' : ''}>Username único<input aria-invalid={Boolean(registerErrors.username)} value={registerForm.username} onChange={(event) => { setRegisterForm({ ...registerForm, username: event.target.value }); setRegisterErrors((current) => ({ ...current, username: '' })); }} placeholder="@tu_username" />{registerErrors.username && <span className="field-error" role="alert">{registerErrors.username}</span>}</label>
+            <label className={registerErrors.email ? 'has-error' : ''}>Correo electrónico<input aria-invalid={Boolean(registerErrors.email)} type="email" value={registerForm.email} onChange={(event) => { setRegisterForm({ ...registerForm, email: event.target.value }); setRegisterErrors((current) => ({ ...current, email: '' })); }} />{registerErrors.email && <span className="field-error" role="alert">{registerErrors.email}</span>}</label>
+            <label className={registerErrors.password ? 'has-error' : ''}>Contraseña<input aria-invalid={Boolean(registerErrors.password)} type="password" value={registerForm.password} onChange={(event) => { setRegisterForm({ ...registerForm, password: event.target.value }); setRegisterErrors((current) => ({ ...current, password: '' })); }} />{registerErrors.password && <span className="field-error" role="alert">{registerErrors.password}</span>}</label>
             <button className="primary-btn">Registrarme</button>
           </form>
         )}
