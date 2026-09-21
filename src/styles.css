@@ -505,3 +505,83 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 @media (max-width: 900px) {
   .sidebar { border-right: 0; border-bottom: 1px solid #1c2b40; }
 }
+
+/* Discord-inspired workspace polish */
+:root {
+  --workspace: #0b101b;
+  --sidebar-surface: #111827;
+  --surface-raised: #151f30;
+  --surface-soft: #101a2a;
+  --surface-hover: #1b2a3f;
+  --line-strong: #2a405a;
+  --accent-glow: rgba(69,214,194,.18);
+}
+
+html, body, #root { background: var(--workspace); }
+body { background-image: radial-gradient(circle at 75% -10%, rgba(45,102,126,.16), transparent 32%), radial-gradient(circle at 10% 100%, rgba(31,71,101,.12), transparent 28%); }
+.forum-app { grid-template-columns: 264px minmax(0, 1fr); background: transparent; }
+.sidebar { padding: 22px 14px 18px; background: linear-gradient(180deg, #111b2b 0%, #0e1725 100%); border-right: 1px solid #24364d; box-shadow: 15px 0 40px rgba(0,0,0,.12); }
+.sidebar .sidebar-brand { padding: 0 10px 20px; margin-bottom: 17px; border-bottom-color: #283e58; }
+.sidebar .logo { width: 38px; height: 38px; border-radius: 11px; box-shadow: 0 0 0 5px rgba(69,214,194,.08), 0 9px 24px rgba(0,0,0,.2); }
+.sidebar .brand-block h2 { letter-spacing: -.02em; }
+.profile-card { margin-bottom: 18px; padding: 12px; border-radius: 12px; background: rgba(69,214,194,.07); border-color: rgba(69,214,194,.17); box-shadow: inset 0 1px rgba(255,255,255,.04); }
+.profile-card:hover { background: rgba(69,214,194,.12); border-color: rgba(69,214,194,.3); }
+.board-list { padding: 0 3px 17px; }
+.board-list .mini-label, .app-nav .mini-label { padding: 0 8px; }
+.board-item, .app-nav button { min-height: 39px; padding: 9px 11px; border-radius: 8px; }
+.board-item.active, .app-nav button.active { position: relative; color: #f2ffff; background: #1a2c42; border-color: #2c5365; box-shadow: inset 0 0 0 1px rgba(69,214,194,.08); }
+.board-item.active::before, .app-nav button.active::before { content: ''; position: absolute; left: -4px; width: 3px; height: 20px; border-radius: 0 4px 4px 0; background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+.app-nav { margin-top: 16px; gap: 3px; }
+.main-panel { padding: 25px clamp(20px, 4vw, 58px); }
+.topbar { position: relative; align-items: center; margin-bottom: 28px; padding: 0 0 20px; border-bottom-color: #22344b; }
+.topbar-title h3 { color: #f1f6ff; font-size: 1.16rem; letter-spacing: -.02em; }
+.topbar-title small { max-width: 430px; }
+.topbar-actions { min-width: 0; }
+.topbar-actions > input, .global-search input { height: 39px; border-radius: 10px; background: #111d2d; border-color: #2a405a; }
+.global-search { min-width: min(330px, 34vw); }
+.search-results, .notification-popover { border-color: #2c4863; background: #111c2c; box-shadow: 0 20px 60px rgba(0,0,0,.42); }
+.notification-item, .search-results button { border-radius: 8px; }
+.thread-creator, .thread-list-panel, .thread-detail-panel, .panel-card, .forum-presence, .profile-hero { border-radius: 12px; border-color: #253a53; background: linear-gradient(145deg, #131e2f, #101a29); box-shadow: 0 14px 35px rgba(0,0,0,.16); }
+.thread-creator { padding: 19px; border-top-color: #31536a; }
+.thread-creator h4, .section-header h4, .discussion-header h3, .page-heading h2 { color: #f0f5ff; letter-spacing: -.025em; }
+.thread-list-panel, .thread-detail-panel { padding: 16px; }
+.thread-card { padding: 13px; border-radius: 10px; background: #101b2b; border-color: #21364d; }
+.thread-card:hover, .thread-card.selected { transform: translateX(2px); border-color: #3b827f; background: #142c3a; box-shadow: 0 8px 22px rgba(0,0,0,.16); }
+.thread-card p, .post-card p, .discussion-body p { color: #c0cede; }
+.discussion-body { margin-top: 15px; border-radius: 10px; background: rgba(69,214,194,.045); }
+.post-card { padding: 15px; border-radius: 10px; background: #101a29; border-color: #263b53; }
+.post-card:hover { border-color: #34516b; box-shadow: 0 8px 22px rgba(0,0,0,.13); }
+.post-meta { padding-bottom: 10px; border-bottom: 1px solid rgba(42,64,90,.6); }
+.reply-form { margin-top: 16px; padding: 11px; border-radius: 12px; background: #0e1827; border-color: #29445c; box-shadow: inset 0 1px rgba(255,255,255,.03); }
+.composer-box textarea, .ticket-reply textarea { background: #0c1625; border-color: #2b4660; }
+.composer-box textarea:focus, .ticket-reply textarea:focus { border-color: #4cbfaf; box-shadow: 0 0 0 3px rgba(69,214,194,.1); }
+.attachment-button, .send-icon-btn, .ticket-reply .primary-btn { width: 38px; height: 38px; border-radius: 9px; background: #17283b; border-color: #365570; box-shadow: none; }
+.attachment-button:hover, .send-icon-btn:hover, .ticket-reply .primary-btn:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 16px rgba(69,214,194,.18); }
+.forum-presence { padding: 15px; }
+.presence-heading { padding-bottom: 13px; }
+.presence-user { border-radius: 8px; }
+.presence-user:hover { background: rgba(69,214,194,.1); }
+.ticket-layout { overflow: hidden; border-radius: 13px; border-color: #293f57; box-shadow: 0 18px 45px rgba(0,0,0,.2); }
+.ticket-sidebar { padding: 15px; background: #0e1827; }
+.ticket-item { border-radius: 9px; }
+.ticket-item:hover, .ticket-item.active { background: #192b40; border-color: #2c4a65; box-shadow: none; }
+.ticket-header { padding: 17px 19px; background: #131f30; }
+.ticket-messages { background: #0c1625; }
+.ticket-message { border-radius: 10px; background: #152337; border-color: #29415a; box-shadow: 0 5px 16px rgba(0,0,0,.1); }
+.ticket-message.mine { background: #12333a; border-color: #276961; }
+.ticket-reply { padding: 11px 68px 11px 0; border-top-color: #263b52; background: #101a29; }
+.moderation-summary-card { border-color: #2a405a; background: #131f30; }
+.moderation-section { background: linear-gradient(145deg, #131e2f, #101a29); }
+.moderation-user-wrap { border-color: #263e57; background: #101b2b; }
+.moderation-user-wrap:hover { background: #15263a; border-color: #3a6078; }
+.moderation-menu-popover { border-color: #35516c; background: #16263a; box-shadow: 0 16px 35px rgba(0,0,0,.3); }
+.app-dialog { border-radius: 13px; background: #142236; border-color: #34516c; }
+.primary-btn { box-shadow: 0 7px 18px rgba(69,214,194,.12); }
+
+@media (max-width: 680px) {
+  .forum-app { grid-template-columns: 1fr; }
+  .main-panel { padding: 18px 12px; }
+  .topbar { margin-bottom: 20px; }
+  .topbar-actions { gap: 7px; }
+  .thread-creator, .thread-list-panel, .thread-detail-panel, .panel-card { border-radius: 11px; }
+}
