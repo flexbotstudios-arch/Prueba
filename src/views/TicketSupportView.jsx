@@ -1,5 +1,5 @@
 import { ArrowUp, Paperclip } from 'lucide-react';
-import { AttachmentPicker } from '../components/Common';
+import { AttachmentPicker, RoleBadge } from '../components/Common';
 
 const submitOnEnter = (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {
@@ -21,5 +21,6 @@ export default function TicketSupportView({ messages, replies, users, loggedUser
 }
 
 function TicketMessage({ item, users, loggedUser, formatDate }) {
-  return <div className={`ticket-message ${item.userId === loggedUser.id ? 'mine' : ''}`}><strong>{users[item.userId]?.name || 'Usuario'}</strong><small>{formatDate(item.createdAt)}</small>{item.content && <p>{item.content}</p>}{item.attachmentUrl && (item.attachmentType || '').startsWith('image/') ? <img className="ticket-attachment-image" src={item.attachmentUrl} alt={item.attachmentName || 'Imagen adjunta'} /> : item.attachmentUrl && <a className="attachment-link" href={item.attachmentUrl} target="_blank" rel="noreferrer"><Paperclip size={15} /><span>{item.attachmentName || 'Archivo adjunto'}</span></a>}</div>;
+  const author = users[item.userId];
+  return <div className={`ticket-message ${item.userId === loggedUser.id ? 'mine' : ''}`}><div className="ticket-message-author"><strong>{author?.name || 'Usuario'}</strong><RoleBadge role={author?.role || 'member'} /></div><small>{formatDate(item.createdAt)}</small>{item.content && <p>{item.content}</p>}{item.attachmentUrl && (item.attachmentType || '').startsWith('image/') ? <img className="ticket-attachment-image" src={item.attachmentUrl} alt={item.attachmentName || 'Imagen adjunta'} /> : item.attachmentUrl && <a className="attachment-link" href={item.attachmentUrl} target="_blank" rel="noreferrer"><Paperclip size={15} /><span>{item.attachmentName || 'Archivo adjunto'}</span></a>}</div>;
 }
