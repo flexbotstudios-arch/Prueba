@@ -197,6 +197,8 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .moderation-history div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .78rem; }
 .moderation-history small { color: var(--muted); text-align: right; }
 .moderation-history p { margin: 0; color: var(--muted); font-size: .78rem; }
+.moderation-history .history-delete { display: grid; flex: 0 0 auto; place-items: center; width: 28px; min-height: 28px; padding: 0; border-color: rgba(255,126,140,.28); color: #ff9ca8; background: rgba(255,126,140,.1); }
+.moderation-history .history-delete:hover { border-color: #ff7e8c; background: rgba(255,126,140,.2); }
 .profile-hero { display: flex; align-items: center; gap: 17px; padding: 22px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
 .profile-hero .avatar { width: 72px; height: 72px; }
 .profile-hero h2 { margin: 7px 0 3px; }

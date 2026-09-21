@@ -460,6 +460,21 @@ app.post('/api/warnings', (req, res) => {
   return res.status(201).json({ warningCount, banned: warningCount >= 3 });
 });
 
+app.delete('/api/warnings/:id', (req, res) => {
+  const actor = requireRole(req, res, ['moderator', 'admin']);
+  if (!actor) return;
+  const warning = queryOne('SELECT * FROM warnings WHERE id = ?', [Number(req.params.id)]);
+  if (!warning) return res.status(404).json({ message: 'Advertencia no encontrada' });
+  runSql('DELETE FROM warnings WHERE id = ?', [warning.id]);
+  const warningCount = Number(queryOne('SELECT COUNT(*) AS count FROM warnings WHERE userId = ?', [warning.userId])?.count || 0);
+  const target = getUser(warning.userId);
+  if (target?.status === 'banned' && target.banReason === 'Tres advertencias acumuladas' && warningCount < 3) {
+    runSql("UPDATE users SET status = 'active', bannedUntil = NULL, banReason = '' WHERE id = ?", [warning.userId]);
+  }
+  persistDb();
+  return res.json({ ok: true, warningCount, user: serializeUser(getUser(warning.userId)) });
+});
+
 app.patch('/api/reports/:id', (req, res) => {
   const actor = requireRole(req, res, ['moderator', 'admin']);
   if (!actor) return;
