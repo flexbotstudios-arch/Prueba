@@ -112,7 +112,9 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .content-image { display: block; width: min(100%, 560px); max-height: 460px; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; object-fit: contain; background: #0b1524; }
 .composer-box { position: relative; }
 .composer-box textarea { padding-right: 56px; }
-.composer-box .attachment-picker { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.composer-box .attachment-picker { position: absolute; top: 50%; right: 10px; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); }
+.thread-creator .composer-box textarea { min-height: 76px; }
+.reply-form .composer-box textarea { min-height: 82px; }
 .attachment-button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; color: var(--accent-dark); background: #172337; cursor: pointer; }
 .attachment-button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 .attachment-button input { display: none; }
