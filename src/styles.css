@@ -30,7 +30,7 @@ button { cursor: pointer; }
 button, input, textarea, select { border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); }
 input, textarea, select { width: 100%; padding: 11px 13px; outline: none; }
 input:focus, textarea:focus, select:focus { border-color: #76bdb6; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
-textarea { resize: vertical; min-height: 96px; }
+textarea { resize: none; min-height: 96px; }
 button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 28px; background: linear-gradient(135deg, #eef7f5, #f8fafc 55%, #edf1f8); }
@@ -115,6 +115,11 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .composer-box .attachment-picker { position: absolute; top: 50%; right: 10px; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); }
 .thread-creator .composer-box textarea { min-height: 76px; }
 .reply-form .composer-box textarea { min-height: 82px; }
+.send-icon-btn { display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border: 1px solid var(--accent); border-radius: 50%; color: #071517; background: var(--accent); cursor: pointer; }
+.send-icon-btn:hover { background: #75e5d7; }
+.ticket-reply { position: relative; padding-right: 68px; }
+.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 50%; font-size: 0; transform: translateY(-50%); }
+.ticket-reply .primary-btn::before { content: '↑'; color: #071517; font-size: 1.35rem; line-height: 1; }
 .attachment-button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 9px; color: var(--accent-dark); background: #172337; cursor: pointer; }
 .attachment-button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 .attachment-button input { display: none; }

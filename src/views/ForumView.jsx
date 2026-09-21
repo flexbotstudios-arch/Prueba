@@ -1,4 +1,4 @@
-import { Circle, Paperclip, Users } from 'lucide-react';
+import { ArrowUp, Circle, Paperclip, Users } from 'lucide-react';
 import { AttachmentPicker, Avatar, RoleBadge, UserLink } from '../components/Common';
 
 const submitOnEnter = (event) => {
@@ -55,7 +55,7 @@ export default function ForumView({ boards, activeThread, filteredThreads, threa
                   return <article key={post.id} className="post-card"><div className="post-meta"><UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} /><span>{formatDate(post.createdAt)}</span></div>{post.content && <p>{post.content}</p>}{post.imageUrl && <img className="content-image" src={post.imageUrl} alt="Imagen de la respuesta" />}{post.attachmentUrl && <AttachmentLink attachment={post} />}<div className="action-row"><button className="mini-action" onClick={() => onReport('post', post.id)}>Reportar</button>{(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}{isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}</div></article>;
                 }) : <p className="empty-state">Aún no hay respuestas en este tema.</p>}
               </div>
-              {!activeThread.locked && <form onSubmit={handleAddPost} className="reply-form"><div className="composer-box"><textarea value={postDraft} onChange={(event) => setPostDraft(event.target.value)} onKeyDown={submitOnEnter} placeholder="Escribe tu respuesta..." rows="4" /><AttachmentPicker value={postAttachment} onChange={setPostAttachment} uploadFile={uploadFile} /></div><button className="primary-btn">Responder</button></form>}
+              {!activeThread.locked && <form onSubmit={handleAddPost} className="reply-form"><div className="composer-box"><textarea value={postDraft} onChange={(event) => setPostDraft(event.target.value)} onKeyDown={submitOnEnter} placeholder="Escribe tu respuesta..." rows="4" /><AttachmentPicker value={postAttachment} onChange={setPostAttachment} uploadFile={uploadFile} /><button type="submit" className="send-icon-btn" title="Enviar respuesta" aria-label="Enviar respuesta"><ArrowUp size={18} /></button></div></form>}
             </>
           ) : <p className="empty-state">Selecciona un tema para comenzar.</p>}
         </section>
