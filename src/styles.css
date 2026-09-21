@@ -112,22 +112,26 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .content-image { display: block; width: min(100%, 560px); max-height: 460px; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; object-fit: contain; background: #0b1524; }
 .composer-box { position: relative; }
 .composer-box textarea { min-height: 54px; max-height: 220px; padding: 15px 64px; overflow-y: auto; field-sizing: content; }
+.composer-box:has(.attachment-picker.has-attachment) textarea { padding-bottom: 68px; }
 .composer-box textarea { scrollbar-width: none; }
 .composer-box textarea::-webkit-scrollbar { display: none; }
 .composer-box .attachment-picker { position: absolute; top: 50%; left: 10px; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); }
+.composer-box .attachment-picker.has-attachment { top: 12px; left: 12px; width: calc(100% - 24px); transform: none; }
+.composer-box:has(.attachment-picker.has-attachment) .send-icon-btn { top: 12px; }
 .thread-creator .composer-box textarea, .reply-form .composer-box textarea { min-height: 54px; }
-.send-icon-btn { position: absolute; top: 50%; right: 12px; display: grid; place-items: center; width: 40px; height: 40px; min-height: 40px; padding: 0; border: 1px solid var(--accent); border-radius: 10px; color: #071517; background: var(--accent); cursor: pointer; transform: translateY(-50%); }
-.send-icon-btn:hover { background: #75e5d7; }
+.send-icon-btn { position: absolute; top: 50%; right: 12px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border: 1px solid #3b5b73; border-radius: 10px; color: #a6eee4; background: #17283b; box-shadow: 0 5px 14px rgba(0,0,0,.18); cursor: pointer; transform: translateY(-50%); }
+.send-icon-btn:hover { border-color: var(--accent); color: #071517; background: var(--accent); }
 .ticket-reply { position: relative; padding-right: 68px; }
 .ticket-reply textarea { padding-right: 70px; scrollbar-width: none; }
 .ticket-reply textarea::-webkit-scrollbar { display: none; }
-.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 10px; font-size: 0; transform: translateY(-50%); }
+.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border: 1px solid #3b5b73; border-radius: 10px; color: #a6eee4; background: #17283b; box-shadow: 0 5px 14px rgba(0,0,0,.18); font-size: 0; transform: translateY(-50%); }
+.ticket-reply .primary-btn:hover { border-color: var(--accent); color: #071517; background: var(--accent); }
 .ticket-reply .primary-btn::before { content: '↑'; color: #071517; font-size: 1.35rem; line-height: 1; }
-.attachment-button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--accent); border-radius: 10px; color: #071517; background: var(--accent); cursor: pointer; }
-.attachment-button:hover, .send-icon-btn:hover { border-color: #75e5d7; color: #071517; background: #75e5d7; }
+.attachment-button { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #3b5b73; border-radius: 10px; color: #a6eee4; background: #17283b; box-shadow: 0 5px 14px rgba(0,0,0,.18); cursor: pointer; }
+.attachment-button:hover { border-color: var(--accent); color: #071517; background: var(--accent); }
 .attachment-button input { display: none; }
 .attachment-picker > small { position: absolute; top: calc(100% + 4px); left: 0; color: var(--muted); font-size: .68rem; white-space: nowrap; }
-.attachment-preview { position: absolute; top: 50%; left: 48px; display: flex; align-items: center; gap: 7px; width: min(220px, 38vw); padding: 5px 7px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #132236; transform: translateY(-50%); }
+.attachment-preview { position: absolute; right: 0; bottom: 0; left: 50px; display: flex; align-items: center; gap: 7px; min-width: 0; padding: 5px 7px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #132236; }
 .attachment-preview-media { display: grid; flex: 0 0 auto; place-items: center; width: 34px; height: 34px; overflow: hidden; border-radius: 6px; color: var(--accent); background: #0b1524; }
 .attachment-preview-media img { width: 100%; height: 100%; object-fit: cover; }
 .attachment-preview-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 1px; }

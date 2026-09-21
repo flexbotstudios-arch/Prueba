@@ -75,7 +75,7 @@ export function AttachmentPicker({ value, onChange, uploadFile }) {
       setUploading(false);
     }
   };
-  return <div className="attachment-picker"><label className="attachment-button" title="Adjuntar archivo"><Paperclip size={17} /><input type="file" onChange={handleChange} disabled={uploading} /></label>{uploading && <small>Subiendo...</small>}{value && <div className="attachment-preview"><div className="attachment-preview-media">{value.type?.startsWith('image/') ? <img src={value.url} alt="Vista previa del archivo" /> : <Paperclip size={18} />}</div><div className="attachment-preview-copy"><strong>{value.name}</strong><small>{formatFileSize(value.size)}</small></div><button type="button" onClick={() => onChange(null)} aria-label="Quitar archivo">×</button></div>}</div>;
+  return <div className={`attachment-picker ${value ? 'has-attachment' : ''}`}><label className="attachment-button" title="Adjuntar archivo"><Paperclip size={17} /><input type="file" onChange={handleChange} disabled={uploading} /></label>{uploading && <small>Subiendo...</small>}{value && <div className="attachment-preview"><div className="attachment-preview-media">{value.type?.startsWith('image/') ? <img src={value.url} alt="Vista previa del archivo" /> : <Paperclip size={18} />}</div><div className="attachment-preview-copy"><strong>{value.name}</strong><small>{formatFileSize(value.size)}</small></div><button type="button" onClick={() => onChange(null)} aria-label="Quitar archivo">×</button></div>}</div>;
 }
 
 function formatFileSize(size) {
