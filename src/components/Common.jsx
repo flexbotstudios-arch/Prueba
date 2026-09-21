@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Gavel, Headphones, ImagePlus, ShieldCheck, UserRound } from 'lucide-react';
+import { Camera, Gavel, Headphones, ImagePlus, Paperclip, ShieldCheck, UserRound } from 'lucide-react';
 
 export const roleLabels = { creator: 'Creador', admin: 'Administrador', moderator: 'Moderador', support: 'Soporte', member: 'Miembro' };
 export const roleIcons = { creator: ShieldCheck, admin: ShieldCheck, moderator: Gavel, support: Headphones, member: UserRound };
@@ -60,4 +60,25 @@ export function AvatarPicker({ value, user, onChange, uploadImage }) {
     }
   };
   return <label className={`avatar-picker ${uploading ? 'uploading' : ''}`} title="Cambiar avatar"><Avatar user={{ ...user, avatar: value || user?.avatar }} /><span><Camera size={15} /></span><input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleChange} disabled={uploading} /></label>;
+}
+
+export function AttachmentPicker({ value, onChange, uploadFile }) {
+  const [uploading, setUploading] = useState(false);
+  const handleChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    try {
+      onChange(await uploadFile(file, 'attachment'));
+    } finally {
+      setUploading(false);
+    }
+  };
+  return <div className="attachment-picker"><label className="attachment-button" title="Adjuntar archivo"><Paperclip size={17} /><input type="file" onChange={handleChange} disabled={uploading} /></label>{uploading && <small>Subiendo...</small>}{value && <span className="attachment-chip"><Paperclip size={14} /><strong>{value.name}</strong><small>{formatFileSize(value.size)}</small><button type="button" onClick={() => onChange(null)} aria-label="Quitar archivo">×</button></span>}</div>;
+}
+
+function formatFileSize(size) {
+  if (!size) return '';
+  return size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(size / 1024))} KB`;
 }

@@ -44,9 +44,10 @@ function App() {
   const [registerForm, setRegisterForm] = useState({ name: '', username: '', email: '', password: '' });
   const [selectedBoardId, setSelectedBoardId] = useState(initialRoute.boardId || 'general');
   const [selectedThreadId, setSelectedThreadId] = useState(null);
-  const [threadForm, setThreadForm] = useState({ title: '', content: '', imageUrl: '' });
+  const [threadForm, setThreadForm] = useState({ title: '', content: '', imageUrl: '', attachment: null });
   const [postDraft, setPostDraft] = useState('');
   const [postImageUrl, setPostImageUrl] = useState('');
+  const [postAttachment, setPostAttachment] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileForm, setProfileForm] = useState({ name: '', username: '', avatar: '', bio: '' });
   const [supportForm, setSupportForm] = useState({ subject: '', content: '' });
@@ -250,10 +251,19 @@ function App() {
 
   const json = (body, method = 'POST') => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const uploadImage = async (file) => {
-    if (file.size > 5 * 1024 * 1024) throw new Error('La imagen no puede superar los 5 MB');
-    const image = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('No se pudo leer la imagen')); reader.readAsDataURL(file); });
-    const result = await api('/api/uploads', json({ image }));
+    const result = await uploadFile(file, 'avatar');
     return result.url;
+  };
+  const uploadFile = async (file, purpose) => {
+    if (file.size > 200 * 1024 * 1024) throw new Error('El archivo no puede superar los 200 MB');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('purpose', purpose);
+    const headers = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+    const response = await fetch('/api/uploads', { method: 'POST', headers, body: formData });
+    const result = await parseResponse(response);
+    if (!response.ok) throw new Error(result.message || 'No se pudo subir el archivo');
+    return result;
   };
   const showNotice = (message, title = 'Aviso') => setDialog({ title, message, confirmLabel: 'Aceptar' });
   const showConfirm = (message, onConfirm) => setDialog({ title: 'Confirmar acción', message, confirmLabel: 'Confirmar', cancelLabel: 'Cancelar', onConfirm });
@@ -405,7 +415,7 @@ function App() {
     event.preventDefault();
     try {
       const result = await api('/api/threads', json({ ...threadForm, boardId: selectedBoardId, userId: loggedUser.id }));
-      setThreadForm({ title: '', content: '', imageUrl: '' });
+      setThreadForm({ title: '', content: '', imageUrl: '', attachment: null });
       setView('forum');
       await fetchForumData(result.thread.id);
     } catch (error) {
@@ -417,9 +427,10 @@ function App() {
     event.preventDefault();
     if ((!postDraft.trim() && !postImageUrl) || !activeThread) return;
     try {
-      await api('/api/posts', json({ threadId: activeThread.id, content: postDraft, imageUrl: postImageUrl, userId: loggedUser.id }));
+      await api('/api/posts', json({ threadId: activeThread.id, content: postDraft, imageUrl: postImageUrl, attachment: postAttachment, userId: loggedUser.id }));
       setPostDraft('');
       setPostImageUrl('');
+      setPostAttachment(null);
       await fetchForumData(activeThread.id);
     } catch (error) {
       showNotice(error.message, 'No se pudo enviar la respuesta');
@@ -620,7 +631,7 @@ function App() {
         </header>
 
         <div className="view-transition" key={`${view}-${selectedBoardId}-${profileId || ''}`}>
-          {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} uploadImage={uploadImage} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} postImageUrl={postImageUrl} setPostImageUrl={setPostImageUrl} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} onReport={handleReport} />}
+          {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} uploadImage={uploadImage} uploadFile={uploadFile} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} postImageUrl={postImageUrl} setPostImageUrl={setPostImageUrl} postAttachment={postAttachment} setPostAttachment={setPostAttachment} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} onReport={handleReport} />}
           {view === 'profile' && <ProfileView user={profileUser} isOwn={profileUser?.id === loggedUser.id} form={profileForm} setForm={setProfileForm} uploadImage={uploadImage} onSave={handleProfileSave} threads={profileThreads} posts={profilePosts} formatDate={formatDate} roleLabels={roleLabels} />}
           {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} history={moderationHistory} onLoadHistory={loadModerationHistory} onDeleteWarning={deleteWarning} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(userId) => setWarningDraft({ userId, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
