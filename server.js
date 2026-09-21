@@ -166,6 +166,10 @@ const initializeDatabase = () => {
     ticketId INTEGER NOT NULL,
     userId INTEGER NOT NULL,
     content TEXT NOT NULL,
+    attachmentUrl TEXT DEFAULT '',
+    attachmentName TEXT DEFAULT '',
+    attachmentType TEXT DEFAULT '',
+    attachmentSize INTEGER DEFAULT 0,
     createdAt TEXT NOT NULL,
     FOREIGN KEY (ticketId) REFERENCES support_messages(id),
     FOREIGN KEY (userId) REFERENCES users(id)
@@ -226,6 +230,10 @@ const initializeDatabase = () => {
   if (!postColumns.includes('imageUrl')) db.run("ALTER TABLE posts ADD COLUMN imageUrl TEXT DEFAULT ''");
   ['attachmentUrl', 'attachmentName', 'attachmentType', 'attachmentSize'].forEach((name) => {
     if (!postColumns.includes(name)) db.run(`ALTER TABLE posts ADD COLUMN ${name} ${name === 'attachmentSize' ? 'INTEGER DEFAULT 0' : "TEXT DEFAULT ''"}`);
+  });
+  const replyColumns = queryAll('PRAGMA table_info(support_replies)').map((column) => column.name);
+  ['attachmentUrl', 'attachmentName', 'attachmentType', 'attachmentSize'].forEach((name) => {
+    if (!replyColumns.includes(name)) db.run(`ALTER TABLE support_replies ADD COLUMN ${name} ${name === 'attachmentSize' ? 'INTEGER DEFAULT 0' : "TEXT DEFAULT ''"}`);
   });
   const notificationColumns = queryAll('PRAGMA table_info(notifications)').map((column) => column.name);
   if (!notificationColumns.includes('entityId')) db.run('ALTER TABLE notifications ADD COLUMN entityId INTEGER DEFAULT NULL');
@@ -814,11 +822,12 @@ app.post('/api/support-messages/:id/replies', (req, res) => {
   const actor = actorFromRequest(req);
   const ticket = queryOne('SELECT * FROM support_messages WHERE id = ?', [Number(req.params.id)]);
   const content = normalizeText(req.body.content);
+  const attachment = req.body.attachment || {};
   if (!ticket) return res.status(404).json({ message: 'Ticket no encontrado' });
   if (!actor || (!hasRole(actor, ['admin', 'support']) && ticket.userId !== actor.id)) return res.status(403).json({ message: 'No puedes responder en este ticket' });
-  if (!content) return res.status(400).json({ message: 'Escribe un mensaje' });
+  if (!content && !normalizeText(attachment.url)) return res.status(400).json({ message: 'Escribe un mensaje o adjunta un archivo' });
   const now = new Date().toISOString();
-  runSql('INSERT INTO support_replies (ticketId, userId, content, createdAt) VALUES (?, ?, ?, ?)', [ticket.id, actor.id, content, now]);
+  runSql('INSERT INTO support_replies (ticketId, userId, content, createdAt, attachmentUrl, attachmentName, attachmentType, attachmentSize) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [ticket.id, actor.id, content, now, normalizeText(attachment.url), normalizeText(attachment.name), normalizeText(attachment.type), Number(attachment.size || 0)]);
   if (ticket.userId !== actor.id) notifyUser(ticket.userId, 'ticket', `${actor.name} respondió a tu ticket.`, '/soporte');
   runSql("UPDATE support_messages SET status = ?, updatedAt = ? WHERE id = ?", [hasRole(actor, ['admin', 'support']) ? 'in_progress' : 'open', now, ticket.id]);
   persistDb();

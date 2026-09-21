@@ -53,6 +53,7 @@ function App() {
   const [supportForm, setSupportForm] = useState({ subject: '', content: '' });
   const [selectedTicketId, setSelectedTicketId] = useState(null);
   const [supportReply, setSupportReply] = useState('');
+  const [supportAttachment, setSupportAttachment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState(null);
   const [userSearch, setUserSearch] = useState('');
@@ -567,10 +568,11 @@ function App() {
 
   const handleSupportReply = async (event) => {
     event.preventDefault();
-    if (!selectedTicketId || !supportReply.trim()) return;
+    if (!selectedTicketId || (!supportReply.trim() && !supportAttachment)) return;
     try {
-      await api(`/api/support-messages/${selectedTicketId}/replies`, json({ userId: loggedUser.id, content: supportReply }));
+      await api(`/api/support-messages/${selectedTicketId}/replies`, json({ userId: loggedUser.id, content: supportReply, attachment: supportAttachment }));
       setSupportReply('');
+      setSupportAttachment(null);
       await fetchForumData();
     } catch (error) {
       showNotice(error.message, 'No se pudo enviar el mensaje');
@@ -636,7 +638,7 @@ function App() {
           {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} history={moderationHistory} onLoadHistory={loadModerationHistory} onDeleteWarning={deleteWarning} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(userId) => setWarningDraft({ userId, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
           {view === 'creator' && <CreatorView users={searchedUsers} loggedUser={loggedUser} search={userSearch} setSearch={setUserSearch} formatDate={formatDate} onReset={async () => { await api('/api/creator/reset', json({})); await fetchForumData(); }} />}
-          {view === 'support' && <TicketSupportView messages={db.supportMessages || []} replies={db.supportReplies || []} users={userMap} loggedUser={loggedUser} isSupport={isSupport} form={supportForm} setForm={setSupportForm} onSubmit={handleSupportSubmit} onStatus={handleSupportStatus} onReply={handleSupportReply} reply={supportReply} setReply={setSupportReply} selectedTicketId={selectedTicketId} setSelectedTicketId={setSelectedTicketId} formatDate={formatDate} />}
+          {view === 'support' && <TicketSupportView messages={db.supportMessages || []} replies={db.supportReplies || []} users={userMap} loggedUser={loggedUser} isSupport={isSupport} form={supportForm} setForm={setSupportForm} onSubmit={handleSupportSubmit} onStatus={handleSupportStatus} onReply={handleSupportReply} reply={supportReply} setReply={setSupportReply} attachment={supportAttachment} setAttachment={setSupportAttachment} uploadFile={uploadFile} selectedTicketId={selectedTicketId} setSelectedTicketId={setSelectedTicketId} formatDate={formatDate} />}
         </div>
 
         {dialog && <AppDialog dialog={dialog} onClose={() => setDialog(null)} />}
