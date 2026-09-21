@@ -13,7 +13,6 @@ const port = Number(process.env.PORT || 3001);
 const dbFilePath = path.join(__dirname, 'data', 'forum.sqlite');
 const SQL = await initSqlJs();
 const sessions = new Map();
-const authAttempts = new Map();
 const SESSION_TTL = 8 * 60 * 60 * 1000;
 const PRESENCE_TTL = 45 * 1000;
 const CREATOR_EMAIL = 'rexgamor613@gmail.com';
@@ -60,16 +59,6 @@ const getOnlineUserIds = () => {
     }
   });
   return onlineUserIds;
-};
-
-const consumeAuthAttempt = (key) => {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  const recent = (authAttempts.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
-  if (recent.length >= 10) return Math.ceil((windowMs - (now - recent[0])) / 1000);
-  recent.push(now);
-  authAttempts.set(key, recent);
-  return 0;
 };
 
 fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
@@ -367,8 +356,6 @@ app.post('/api/register', (req, res) => {
   if (!name || !username || !email || !password) return res.status(400).json({ message: 'Completa todos los campos' });
   if (!/^@[a-z0-9_]{3,24}$/.test(username)) return res.status(400).json({ message: 'El username debe comenzar con @ y tener 3-24 caracteres' });
   if (password.length < 6) return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
-  const retryAfter = consumeAuthAttempt(`register:${req.ip}:${email}`);
-  if (retryAfter) return res.set('Retry-After', String(retryAfter)).status(429).json({ message: `Demasiados intentos para este correo. Espera ${Math.ceil(retryAfter / 60)} minutos.` });
   if (queryOne('SELECT id FROM users WHERE LOWER(email) = ?', [email])) return res.status(409).json({ message: 'Ese correo ya está registrado' });
   if (queryOne('SELECT id FROM users WHERE LOWER(username) = ?', [username])) return res.status(409).json({ message: 'Ese username ya está registrado' });
   try {
@@ -420,8 +407,6 @@ app.post('/api/login', (req, res) => {
   const identifier = normalizeText(req.body.identifier || req.body.email).toLowerCase();
   const password = normalizeText(req.body.password);
   if (!identifier || !password) return res.status(400).json({ message: 'Usuario/correo y contraseña obligatorios' });
-  const retryAfter = consumeAuthAttempt(`login:${req.ip}:${identifier}`);
-  if (retryAfter) return res.set('Retry-After', String(retryAfter)).status(429).json({ message: `Demasiados intentos para este acceso. Espera ${Math.ceil(retryAfter / 60)} minutos.` });
   const user = queryOne('SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', [identifier, identifier]);
   if (!user) {
     const missingMessage = identifier.startsWith('@') ? 'Ese usuario no existe.' : 'Ese correo no existe.';
