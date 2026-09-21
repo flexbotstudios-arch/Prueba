@@ -365,6 +365,13 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 .dialog-mark { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 15px; border: 1px solid rgba(69,214,194,.35); border-radius: 50%; color: #071517; background: var(--accent); font-weight: 900; }
 .app-dialog h2 { margin: 0 0 8px; font-size: 1.2rem; }
 .app-dialog p { margin: 0; color: #aebdd0; line-height: 1.65; }
+.report-dialog { border-color: rgba(255,126,140,.3); }
+.report-dialog .dialog-mark { color: #071517; background: #ffb4bd; }
+.report-dialog textarea { min-height: 120px; margin-top: 8px; border-color: #4d3c56; background: #0b1524; }
+.report-dialog textarea:focus { border-color: #ff9ca8; box-shadow: 0 0 0 3px rgba(255,126,140,.14); }
+.warning-dialog { border-color: rgba(240,181,70,.35); }
+.warning-dialog .dialog-mark { color: #071517; background: #ffd980; }
+.report-card { align-items: flex-start; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 24px; }
 .sanction-dialog { max-width: 470px; }
 .sanction-dialog .eyebrow { margin-bottom: 5px; color: #80bdb8; }

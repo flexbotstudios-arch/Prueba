@@ -58,6 +58,8 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [searchResults, setSearchResults] = useState(null);
   const [reports, setReports] = useState([]);
+  const [reportDraft, setReportDraft] = useState(null);
+  const [warningDraft, setWarningDraft] = useState(null);
 
   const setView = (nextView, options = {}) => {
     const route = {
@@ -259,11 +261,13 @@ function App() {
   const showConfirm = (message, onConfirm) => setDialog({ title: 'Confirmar acción', message, confirmLabel: 'Confirmar', cancelLabel: 'Cancelar', onConfirm });
   const openSanctionDialog = (user, type) => setSanctionDialog({ user, type });
   const handleReport = async (targetType, targetId) => {
-    const reason = window.prompt('Motivo del reporte:');
-    if (!reason?.trim()) return;
+    setReportDraft({ targetType, targetId, reason: '' });
+  };
+  const submitReport = async () => {
+    if (!reportDraft?.reason.trim()) return;
     try {
-      await api('/api/reports', json({ targetType, targetId, reason }));
-      showNotice('El reporte fue enviado al equipo de moderación.', 'Reporte enviado');
+      await api('/api/reports', json(reportDraft));
+      setReportDraft(null);
     } catch (error) {
       showNotice(error.message, 'No se pudo enviar el reporte');
     }
@@ -277,6 +281,32 @@ function App() {
     await api(`/api/reports/${reportId}`, json({ status }, 'PATCH'));
     setReports((current) => current.filter((report) => report.id !== reportId));
   };
+  const submitWarning = async () => {
+    if (!warningDraft?.reason.trim()) return;
+    try {
+      await api('/api/warnings', json({ userId: warningDraft.userId, reason: warningDraft.reason }));
+      setWarningDraft(null);
+      const result = await api('/api/reports');
+      setReports(result.reports || []);
+      await fetchForumData();
+    } catch (error) {
+      showNotice(error.message, 'No se pudo crear la advertencia');
+    }
+  };
+  const openReportedThread = (report) => {
+    setSelectedThreadId(Number(report.threadId));
+    setView('forum', { boardId: report.boardId });
+  };
+  const deleteReportedContent = async (report) => {
+    try {
+      if (report.targetType === 'post') await handleDeletePost({ id: report.targetId });
+      else await handleDeleteThread({ id: report.targetId });
+      await resolveReport(report.id, 'resolved');
+    } catch (error) {
+      showNotice(error.message, 'No se pudo eliminar el contenido');
+    }
+  };
+  const banReportedOwner = (report) => handleBan({ id: report.ownerId, name: 'dueño de la publicación', status: 'active' }, true, 1440, 'Baneo por contenido reportado');
 
   const handleRegister = async (event) => {
     event.preventDefault();
@@ -548,7 +578,7 @@ function App() {
         <div className="view-transition" key={`${view}-${selectedBoardId}-${profileId || ''}`}>
           {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} onReport={handleReport} />}
           {view === 'profile' && <ProfileView user={profileUser} isOwn={profileUser?.id === loggedUser.id} form={profileForm} setForm={setProfileForm} onSave={handleProfileSave} threads={profileThreads} posts={profilePosts} formatDate={formatDate} roleLabels={roleLabels} />}
-          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} onBan={handleBan} onMute={handleMute} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} formatDate={formatDate} />}
+          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(userId) => setWarningDraft({ userId, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
           {view === 'creator' && <CreatorView users={searchedUsers} loggedUser={loggedUser} search={userSearch} setSearch={setUserSearch} formatDate={formatDate} onReset={async () => { await api('/api/creator/reset', json({})); await fetchForumData(); }} />}
           {view === 'support' && <TicketSupportView messages={db.supportMessages || []} replies={db.supportReplies || []} users={userMap} loggedUser={loggedUser} isSupport={isSupport} form={supportForm} setForm={setSupportForm} onSubmit={handleSupportSubmit} onStatus={handleSupportStatus} onReply={handleSupportReply} reply={supportReply} setReply={setSupportReply} selectedTicketId={selectedTicketId} setSelectedTicketId={setSelectedTicketId} formatDate={formatDate} />}
@@ -556,6 +586,8 @@ function App() {
 
         {dialog && <AppDialog dialog={dialog} onClose={() => setDialog(null)} />}
         {sanctionDialog && <SanctionDialog sanction={sanctionDialog} onClose={() => setSanctionDialog(null)} onBan={handleBan} onMute={handleMute} />}
+        {reportDraft && <ReportDialog draft={reportDraft} setDraft={setReportDraft} onClose={() => setReportDraft(null)} onSubmit={submitReport} />}
+        {warningDraft && <WarningDialog draft={warningDraft} setDraft={setWarningDraft} onClose={() => setWarningDraft(null)} onSubmit={submitWarning} />}
       </main>
     </div>
   );
@@ -571,6 +603,10 @@ function SearchResults({ results, openProfile, setView }) {
   return <div className="search-results">{hasResults ? <>{results.users.map((user) => <button key={`user-${user.id}`} onClick={() => openProfile(user.id)}><small>Usuario</small><strong>{user.name}</strong><span>{user.username}</span></button>)}{results.threads.map((thread) => <button key={`thread-${thread.id}`} onClick={() => setView('forum', { boardId: thread.boardId })}><small>Publicación</small><strong>{thread.title}</strong><span>{thread.content.slice(0, 70)}</span></button>)}{results.posts.map((post) => <button key={`post-${post.id}`} onClick={() => setView('forum')}><small>Respuesta</small><strong>{post.content.slice(0, 90)}</strong></button>)}</> : <p>Sin resultados.</p>}</div>;
 }
 
+
+function ReportDialog({ draft, setDraft, onClose, onSubmit }) {
+  return <div className="dialog-backdrop" role="presentation"><form className="app-dialog report-dialog" role="dialog" aria-modal="true" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><div className="dialog-mark">!</div><p className="eyebrow">Moderación comunitaria</p><h2>Reportar contenido</h2><p>Explica brevemente por qué este contenido debería revisarse.</p><label className="sanction-label">Motivo<textarea autoFocus value={draft.reason} onChange={(event) => setDraft({ ...draft, reason: event.target.value })} placeholder="Describe el problema..." rows="5" /></label><div className="dialog-actions"><button type="button" className="ghost-btn" onClick={onClose}>Cancelar</button><button type="submit" className="primary-btn">Enviar reporte</button></div></form></div>;
+}
 function AppDialog({ dialog, onClose }) {
   return (
     <div className="dialog-backdrop" role="presentation">
@@ -587,6 +623,10 @@ function AppDialog({ dialog, onClose }) {
   );
 }
 
+
+function WarningDialog({ draft, setDraft, onClose, onSubmit }) {
+  return <div className="dialog-backdrop" role="presentation"><form className="app-dialog warning-dialog" role="dialog" aria-modal="true" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><div className="dialog-mark">!</div><p className="eyebrow">Moderación</p><h2>Emitir advertencia</h2><p>La tercera advertencia suspende la cuenta durante 1 día automáticamente.</p><label className="sanction-label">Motivo<textarea autoFocus value={draft.reason} onChange={(event) => setDraft({ ...draft, reason: event.target.value })} placeholder="Explica el motivo..." rows="4" /></label><div className="dialog-actions"><button type="button" className="ghost-btn" onClick={onClose}>Cancelar</button><button type="submit" className="primary-btn">Emitir advertencia</button></div></form></div>;
+}
 function UsernameEditor({ value, onChange }) {
   return (
     <div className="panel-card username-editor">

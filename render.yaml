@@ -2,7 +2,11 @@ services:
   - type: web
     name: forum-bonito
     runtime: node
-    plan: free
+    plan: starter
+    disk:
+      name: forum-data
+      mountPath: /var/data
+      sizeGB: 1
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
@@ -10,3 +14,5 @@ services:
         value: production
       - key: CREATOR_PASSWORD
         sync: false
+      - key: DB_FILE_PATH
+        value: /var/data/forum.sqlite

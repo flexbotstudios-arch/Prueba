@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const port = Number(process.env.PORT || 3001);
-const dbFilePath = path.join(__dirname, 'data', 'forum.sqlite');
+const dbFilePath = process.env.DB_FILE_PATH || path.join(__dirname, 'data', 'forum.sqlite');
 const SQL = await initSqlJs();
 const sessions = new Map();
 const SESSION_TTL = 8 * 60 * 60 * 1000;
@@ -181,6 +181,15 @@ const initializeDatabase = () => {
     readAt TEXT DEFAULT NULL,
     createdAt TEXT NOT NULL,
     FOREIGN KEY (userId) REFERENCES users(id)
+  );`);
+  db.run(`CREATE TABLE IF NOT EXISTS warnings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL,
+    moderatorId INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id),
+    FOREIGN KEY (moderatorId) REFERENCES users(id)
   );`);
 
   const columns = queryAll('PRAGMA table_info(users)').map((column) => column.name);
@@ -401,6 +410,7 @@ app.post('/api/reports', (req, res) => {
   if (!queryOne(`SELECT id FROM ${targetTable} WHERE id = ?`, [targetId])) return res.status(404).json({ message: 'Contenido no encontrado' });
   if (queryOne('SELECT id FROM reports WHERE reporterId = ? AND targetType = ? AND targetId = ? AND status = ?', [actor.id, targetType, targetId, 'open'])) return res.status(409).json({ message: 'Ya reportaste este contenido' });
   runSql('INSERT INTO reports (reporterId, targetType, targetId, reason, createdAt) VALUES (?, ?, ?, ?, ?)', [actor.id, targetType, targetId, reason, new Date().toISOString()]);
+  queryAll("SELECT id FROM users WHERE role IN ('moderator', 'admin', 'creator') AND id != ?", [actor.id]).forEach((user) => notifyUser(user.id, 'report', `${actor.name} reportó contenido: ${reason}`, '/paneles/moderacion'));
   persistDb();
   return res.status(201).json({ ok: true });
 });
@@ -408,7 +418,35 @@ app.post('/api/reports', (req, res) => {
 app.get('/api/reports', (req, res) => {
   const actor = requireRole(req, res, ['moderator', 'admin']);
   if (!actor) return;
-  return res.json({ reports: queryAll(`SELECT reports.*, reporter.name AS reporterName, reporter.username AS reporterUsername FROM reports JOIN users reporter ON reporter.id = reports.reporterId WHERE reports.status = 'open' ORDER BY reports.createdAt DESC`) });
+  return res.json({ reports: queryAll(`SELECT reports.*, reporter.name AS reporterName, reporter.username AS reporterUsername, COALESCE(threads.authorId, posts.authorId) AS ownerId, COALESCE(threads.boardId, source_threads.boardId) AS boardId, COALESCE(threads.title, source_threads.title) AS targetTitle, COALESCE(reports.targetId, posts.threadId) AS threadId, (SELECT COUNT(*) FROM warnings WHERE warnings.userId = COALESCE(threads.authorId, posts.authorId)) AS warningCount FROM reports JOIN users reporter ON reporter.id = reports.reporterId LEFT JOIN threads ON reports.targetType = 'thread' AND threads.id = reports.targetId LEFT JOIN posts ON reports.targetType = 'post' AND posts.id = reports.targetId LEFT JOIN threads source_threads ON posts.threadId = source_threads.id WHERE reports.status = 'open' ORDER BY reports.createdAt DESC`) });
+});
+
+app.get('/api/warnings', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  const requestedUserId = Number(req.query.userId || actor.id);
+  if (requestedUserId !== actor.id && !hasRole(actor, ['moderator', 'admin'])) return res.status(403).json({ message: 'No puedes consultar estas advertencias' });
+  return res.json({ warnings: queryAll('SELECT warnings.*, moderator.name AS moderatorName FROM warnings JOIN users moderator ON moderator.id = warnings.moderatorId WHERE warnings.userId = ? ORDER BY warnings.createdAt DESC', [requestedUserId]) });
+});
+
+app.post('/api/warnings', (req, res) => {
+  const actor = requireRole(req, res, ['moderator', 'admin']);
+  if (!actor) return;
+  const userId = Number(req.body.userId);
+  const reason = normalizeText(req.body.reason);
+  const target = getUser(userId);
+  if (!target || !reason) return res.status(400).json({ message: 'Indica el usuario y el motivo' });
+  const now = new Date().toISOString();
+  runSql('INSERT INTO warnings (userId, moderatorId, reason, createdAt) VALUES (?, ?, ?, ?)', [userId, actor.id, reason, now]);
+  const warningCount = Number(queryOne('SELECT COUNT(*) AS count FROM warnings WHERE userId = ?', [userId])?.count || 0);
+  notifyUser(userId, 'warning', `Has recibido una advertencia: ${reason}`, '/perfil');
+  if (warningCount >= 3) {
+    const bannedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    runSql("UPDATE users SET status = 'banned', bannedUntil = ?, banReason = ? WHERE id = ?", [bannedUntil, 'Tres advertencias acumuladas', userId]);
+    notifyUser(userId, 'ban', 'Has sido suspendido durante 1 día por acumular 3 advertencias.', '/perfil');
+  }
+  persistDb();
+  return res.status(201).json({ warningCount, banned: warningCount >= 3 });
 });
 
 app.patch('/api/reports/:id', (req, res) => {
