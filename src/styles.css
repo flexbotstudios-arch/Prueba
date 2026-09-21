@@ -91,14 +91,14 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .thread-list-panel, .thread-detail-panel, .panel-card { min-width: 0; padding: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(26,43,70,.035); }
 .section-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
 .thread-list, .post-list { display: flex; flex-direction: column; gap: 9px; }
-.thread-card { width: 100%; min-width: 0; padding: 13px; color: var(--ink); text-align: left; background: #fbfcfe; border-color: var(--line); }
+.thread-card { width: 100%; min-width: 0; padding: 13px; color: var(--ink); text-align: left; white-space: normal; background: #fbfcfe; border-color: var(--line); }
 .thread-card:hover, .thread-card.selected { border-color: #82c5bd; background: var(--accent-soft); }
 .thread-header-row, .post-meta, .admin-user-row, .moderation-item { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
-.thread-header-row strong, .thread-header-row span, .thread-card p, .thread-card small, .post-card p, .discussion-body p, .post-meta > span { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+.thread-header-row strong, .thread-header-row span, .thread-card p, .thread-card small, .post-card p, .discussion-body p, .post-meta > span { min-width: 0; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
 .thread-header-row span, .thread-card small, .post-meta > span, .discussion-header small, .admin-user-row small, .moderation-item small { color: var(--muted); font-size: .78rem; }
 .thread-card p, .post-card p, .discussion-body p { margin: 9px 0; color: #405066; }
 .discussion-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
-.discussion-header h3 { margin: 8px 0 4px; font-size: 1.45rem; }
+.discussion-header h3 { min-width: 0; margin: 8px 0 4px; font-size: 1.45rem; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
 .topic-pill { display: inline-flex; padding: 4px 8px; border-radius: 6px; color: var(--accent-dark); background: var(--accent-soft); font-size: .72rem; font-weight: 700; }
 .discussion-body { margin: 17px 0 16px; padding: 16px 17px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 11px; background: rgba(69,214,194,.045); }
 .discussion-body p { margin: 0; line-height: 1.7; }
