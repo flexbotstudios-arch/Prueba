@@ -248,6 +248,11 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .moderation-history .history-delete { display: grid; flex: 0 0 auto; place-items: center; width: 28px; min-height: 28px; padding: 0; border-color: rgba(255,126,140,.28); color: #ff9ca8; background: rgba(255,126,140,.1); }
 .moderation-history .history-delete:hover { border-color: #ff7e8c; background: rgba(255,126,140,.2); }
 .profile-hero { display: flex; align-items: center; gap: 17px; padding: 22px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+.suspended-profile { min-height: 360px; place-items: center; }
+.suspended-profile-card { width: min(100%, 460px); padding: 34px; border: 1px solid rgba(255,126,140,.3); border-radius: 14px; text-align: center; background: #111a29; box-shadow: var(--shadow); }
+.suspended-profile-card h2 { margin: 12px 0 6px; }
+.suspended-profile-card p { margin: 0; color: var(--muted); }
+.suspended-code { color: #ff9ca8; font-family: monospace; font-size: .76rem; letter-spacing: .08em; }
 .profile-hero .avatar { width: 72px; height: 72px; }
 .profile-hero h2 { margin: 7px 0 3px; }
 .profile-hero p { margin: 0; color: var(--muted); }

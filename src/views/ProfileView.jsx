@@ -2,6 +2,7 @@ import { Avatar, AvatarPicker } from '../components/Common';
 
 export default function ProfileView({ user, isOwn, form, setForm, uploadImage, onSave, threads, posts, formatDate, roleLabels }) {
   if (!user) return <p className="empty-state">Perfil no encontrado.</p>;
+  if (user.status === 'banned') return <SuspendedProfile />;
   return (
     <section className="page-view profile-view">
       <div className="profile-hero">{isOwn ? <AvatarPicker value={form.avatar} user={user} onChange={(avatar) => setForm({ ...form, avatar })} uploadImage={uploadImage} /> : <Avatar user={user} />}<div><span className={`role-badge role-${user.role}`}>{roleLabels[user.role]}</span><h2>{user.name}</h2><p className="profile-username">{user.username}</p><p>{user.bio || 'Este usuario todavía no ha añadido una biografía.'}</p></div></div>
@@ -12,4 +13,8 @@ export default function ProfileView({ user, isOwn, form, setForm, uploadImage, o
       <div className="panel-card"><p className="mini-label">Actividad reciente</p>{threads.length + posts.length === 0 ? <p className="empty-state">Todavía no hay actividad.</p> : <div className="activity-list">{threads.slice(0, 5).map((thread) => <div key={`thread-${thread.id}`}><strong>Publicó: {thread.title}</strong><small>{formatDate(thread.createdAt)}</small></div>)}{posts.slice(0, 5).map((post) => <div key={`post-${post.id}`}><strong>Respondió: {post.content.slice(0, 70)}</strong><small>{formatDate(post.createdAt)}</small></div>)}</div>}</div>
     </section>
   );
+}
+
+function SuspendedProfile() {
+  return <section className="page-view suspended-profile"><div className="suspended-profile-card"><span className="suspended-code">account_suspended</span><h2>Cuenta suspendida</h2><p>Esta cuenta no está disponible mientras dure la suspensión.</p></div></section>;
 }

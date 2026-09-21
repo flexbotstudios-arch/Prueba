@@ -79,8 +79,9 @@ function formatAttachmentSize(size) {
 }
 
 function ForumPresence({ users, loggedUser, openProfile }) {
-  const activeUsers = users.filter((user) => user.isOnline);
-  const inactiveUsers = users.filter((user) => !user.isOnline);
+  const visibleUsers = users.filter((user) => user.status !== 'banned');
+  const activeUsers = visibleUsers.filter((user) => user.isOnline);
+  const inactiveUsers = visibleUsers.filter((user) => !user.isOnline);
   const teamUsers = activeUsers.filter((user) => ['support', 'moderator', 'admin', 'creator'].includes(user.role));
   const renderUser = (user, inactive = false) => <button key={user.id} className={`presence-user ${inactive ? 'is-inactive' : ''}`} onClick={() => openProfile(user.id)}><Avatar user={user} small /><span className="presence-user-copy"><strong>{user.name || 'Usuario'}</strong><small>{user.username || 'Sin username'}</small></span><RoleBadge role={user.role || 'member'} /><Circle className="presence-dot" size={9} fill="currentColor" /></button>;
   return <aside className="forum-presence"><div className="presence-heading"><div><span className="eyebrow">Comunidad</span><h4>Usuarios</h4></div><Users size={18} /></div><p className="presence-caption">Conectados en este momento</p><PresenceGroup className="presence-group" title="Activos" count={activeUsers.length} users={activeUsers} renderUser={renderUser} /><PresenceGroup className="presence-group" title="Inactivos" count={inactiveUsers.length} users={inactiveUsers} renderUser={(user) => renderUser(user, true)} inactive /><PresenceGroup className="presence-group presence-team" title="Equipo" count={teamUsers.length} users={teamUsers} renderUser={renderUser} team /><div className="presence-footer">Tu cuenta: <strong>{loggedUser?.username || 'Usuario'}</strong></div></aside>;
