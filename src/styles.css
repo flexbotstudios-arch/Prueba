@@ -111,27 +111,33 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .image-picker-preview img { width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 8px; object-fit: cover; }
 .content-image { display: block; width: min(100%, 560px); max-height: 460px; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; object-fit: contain; background: #0b1524; }
 .composer-box { position: relative; }
-.composer-box textarea { min-height: 52px; max-height: 220px; padding: 14px 56px; overflow-y: auto; field-sizing: content; }
+.composer-box textarea { min-height: 54px; max-height: 220px; padding: 15px 64px; overflow-y: auto; field-sizing: content; }
 .composer-box textarea { scrollbar-width: none; }
 .composer-box textarea::-webkit-scrollbar { display: none; }
 .composer-box .attachment-picker { position: absolute; top: 50%; left: 10px; display: flex; align-items: center; gap: 8px; transform: translateY(-50%); }
-.thread-creator .composer-box textarea, .reply-form .composer-box textarea { min-height: 52px; }
-.send-icon-btn { position: absolute; top: 50%; right: 10px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border: 1px solid var(--accent); border-radius: 9px; color: #071517; background: var(--accent); cursor: pointer; transform: translateY(-50%); }
+.thread-creator .composer-box textarea, .reply-form .composer-box textarea { min-height: 54px; }
+.send-icon-btn { position: absolute; top: 50%; right: 12px; display: grid; place-items: center; width: 40px; height: 40px; min-height: 40px; padding: 0; border: 1px solid var(--accent); border-radius: 10px; color: #071517; background: var(--accent); cursor: pointer; transform: translateY(-50%); }
 .send-icon-btn:hover { background: #75e5d7; }
 .ticket-reply { position: relative; padding-right: 68px; }
-.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 9px; font-size: 0; transform: translateY(-50%); }
+.ticket-reply textarea { padding-right: 70px; scrollbar-width: none; }
+.ticket-reply textarea::-webkit-scrollbar { display: none; }
+.ticket-reply .primary-btn { position: absolute; top: 50%; right: 18px; display: grid; place-items: center; width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 10px; font-size: 0; transform: translateY(-50%); }
 .ticket-reply .primary-btn::before { content: '↑'; color: #071517; font-size: 1.35rem; line-height: 1; }
-.attachment-button { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--accent); border-radius: 9px; color: #071517; background: var(--accent); cursor: pointer; }
+.attachment-button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--accent); border-radius: 10px; color: #071517; background: var(--accent); cursor: pointer; }
 .attachment-button:hover, .send-icon-btn:hover { border-color: #75e5d7; color: #071517; background: #75e5d7; }
 .attachment-button input { display: none; }
-.attachment-picker > small { color: var(--muted); font-size: .72rem; white-space: nowrap; }
-.attachment-chip { position: absolute; left: 48px; bottom: calc(50% + 23px); display: inline-flex; align-items: center; gap: 6px; max-width: min(300px, 55vw); padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #132236; font-size: .72rem; }
-.attachment-chip strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.attachment-chip small { color: var(--muted); white-space: nowrap; }
-.attachment-chip button { padding: 0 3px; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; }
+.attachment-picker > small { position: absolute; top: calc(100% + 4px); left: 0; color: var(--muted); font-size: .68rem; white-space: nowrap; }
+.attachment-preview { position: absolute; top: 50%; left: 48px; display: flex; align-items: center; gap: 7px; width: min(220px, 38vw); padding: 5px 7px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #132236; transform: translateY(-50%); }
+.attachment-preview-media { display: grid; flex: 0 0 auto; place-items: center; width: 34px; height: 34px; overflow: hidden; border-radius: 6px; color: var(--accent); background: #0b1524; }
+.attachment-preview-media img { width: 100%; height: 100%; object-fit: cover; }
+.attachment-preview-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 1px; }
+.attachment-preview-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; }
+.attachment-preview-copy small { color: var(--muted); font-size: .65rem; }
+.attachment-preview > button { padding: 0 3px; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; }
 .attachment-link { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; margin-top: 12px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--accent-dark); background: var(--accent-soft); text-decoration: none; }
 .attachment-link span { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .attachment-link small { color: var(--muted); }
+.thread-thumb { display: block; width: min(100%, 220px); height: 72px; margin: 8px 0; border: 1px solid var(--line); border-radius: 8px; object-fit: cover; }
 .forum-layout { display: grid; grid-template-columns: minmax(210px, .72fr) minmax(0, 1.55fr) minmax(220px, .78fr); gap: 18px; max-width: 1180px; margin: 18px auto 0; align-items: start; }
 .thread-list-panel, .thread-detail-panel, .panel-card { min-width: 0; padding: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(26,43,70,.035); }
 .section-header { display: flex; justify-content: space-between; margin-bottom: 12px; }

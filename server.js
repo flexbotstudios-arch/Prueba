@@ -716,7 +716,8 @@ app.post('/api/threads', (req, res) => {
   if (!queryOne('SELECT id FROM boards WHERE id = ?', [boardId])) return res.status(404).json({ message: 'La tabla no existe' });
   const now = new Date().toISOString();
   const statement = db.prepare('INSERT INTO threads (boardId, title, content, authorId, createdAt, locked, imageUrl, attachmentUrl, attachmentName, attachmentType, attachmentSize) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  statement.run([boardId, title, content, author.id, now, 0, imageUrl, normalizeText(attachment.url), normalizeText(attachment.name), normalizeText(attachment.type), Number(attachment.size || 0)]);
+  const storedImageUrl = imageUrl || (normalizeText(attachment.type).startsWith('image/') ? normalizeText(attachment.url) : '');
+  statement.run([boardId, title, content, author.id, now, 0, storedImageUrl, normalizeText(attachment.url), normalizeText(attachment.name), normalizeText(attachment.type), Number(attachment.size || 0)]);
   statement.free();
   const thread = queryOne('SELECT * FROM threads WHERE id = ?', [db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]]);
   persistDb();
@@ -735,7 +736,8 @@ app.post('/api/posts', (req, res) => {
   if (author.status === 'banned' || isMuted(author)) return res.status(403).json({ message: sanctionMessage(author, 'responder') });
   const now = new Date().toISOString();
   const statement = db.prepare('INSERT INTO posts (threadId, authorId, content, createdAt, status, imageUrl, attachmentUrl, attachmentName, attachmentType, attachmentSize) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  statement.run([Number(req.body.threadId), author.id, content, now, 'visible', imageUrl, normalizeText(attachment.url), normalizeText(attachment.name), normalizeText(attachment.type), Number(attachment.size || 0)]);
+  const storedImageUrl = imageUrl || (normalizeText(attachment.type).startsWith('image/') ? normalizeText(attachment.url) : '');
+  statement.run([Number(req.body.threadId), author.id, content, now, 'visible', storedImageUrl, normalizeText(attachment.url), normalizeText(attachment.name), normalizeText(attachment.type), Number(attachment.size || 0)]);
   statement.free();
   const post = queryOne('SELECT * FROM posts WHERE id = ?', [db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]]);
   const threadAuthor = queryOne('SELECT authorId, title FROM threads WHERE id = ?', [thread.id]);
