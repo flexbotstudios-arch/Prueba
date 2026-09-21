@@ -14,6 +14,9 @@ const growComposer = (event) => {
 };
 
 export default function ForumView({ boards, activeThread, filteredThreads, threadForm, setThreadForm, uploadFile, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, postAttachment, setPostAttachment, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId, onReport }) {
+  const visibleUser = (user, fallback = { id: 0, name: 'Usuario', role: 'member' }) => user?.status === 'banned'
+    ? { id: user.id, name: 'account_suspended', username: 'account_suspended', role: 'member', status: 'banned', avatar: '' }
+    : user || fallback;
   return (
     <>
       <section className="thread-creator">
@@ -29,7 +32,7 @@ export default function ForumView({ boards, activeThread, filteredThreads, threa
           <div className="section-header"><h4>Temas activos</h4></div>
           <div className="thread-list">
             {filteredThreads.length ? filteredThreads.map((thread) => {
-              const threadAuthor = userMap[thread.authorId] || (loggedUser?.id === thread.authorId ? loggedUser : { id: thread.authorId, name: 'Usuario', role: 'member' });
+              const threadAuthor = visibleUser(userMap[thread.authorId] || (loggedUser?.id === thread.authorId ? loggedUser : null));
               return (
                 <button key={thread.id} className={`thread-card ${activeThread?.id === thread.id ? 'selected' : ''}`} onClick={() => setSelectedThreadId(thread.id)}>
                   <div className="thread-header-row"><strong>{thread.title}</strong><span>{thread.locked ? 'Bloqueado' : `${threadPosts.filter((post) => post.threadId === thread.id).length} respuestas`}</span></div>
@@ -48,14 +51,14 @@ export default function ForumView({ boards, activeThread, filteredThreads, threa
                 <div>
                   <span className="topic-pill">{boards.find((board) => board.id === activeThread.boardId)?.name}</span>
                   <h3>{activeThread.title}</h3>
-                  <small>Publicado por <button className="inline-link" onClick={() => openProfile(activeThread.authorId)}>{(userMap[activeThread.authorId] || (loggedUser?.id === activeThread.authorId ? loggedUser : { name: 'Usuario' })).name}</button> · {formatDate(activeThread.createdAt)}</small>
+                  <small>Publicado por <button className="inline-link" onClick={() => openProfile(activeThread.authorId)}>{visibleUser(userMap[activeThread.authorId] || (loggedUser?.id === activeThread.authorId ? loggedUser : null)).name}</button> · {formatDate(activeThread.createdAt)}</small>
                 </div>
                 <div className="action-row"><button className="mini-action" onClick={() => onReport('thread', activeThread.id)}>Reportar</button>{isModerator && <><button className="ghost-btn small-btn" onClick={() => handleLockThread(activeThread)}>{activeThread.locked ? 'Desbloquear' : 'Bloquear'}</button><button className="danger-btn small-btn" onClick={() => handleDeleteThread(activeThread)}>Eliminar</button></>}</div>
               </div>
               <div className="discussion-body">{activeThread.content && <p>{activeThread.content}</p>}{activeThread.imageUrl && <img className="content-image" src={activeThread.imageUrl} alt="Imagen de la publicación" />}{activeThread.attachmentUrl && activeThread.attachmentUrl !== activeThread.imageUrl && <AttachmentLink attachment={activeThread} />}</div>
               <div className="post-list">
                 {threadPosts.length ? threadPosts.map((post) => {
-                  const postAuthor = userMap[post.authorId] || (loggedUser?.id === post.authorId ? loggedUser : { id: post.authorId, name: 'Usuario', role: 'member' });
+                  const postAuthor = visibleUser(userMap[post.authorId] || (loggedUser?.id === post.authorId ? loggedUser : null));
                   return <article key={post.id} className="post-card"><div className="post-meta"><UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} /><span>{formatDate(post.createdAt)}</span></div>{post.content && <p>{post.content}</p>}{post.imageUrl && <img className="content-image" src={post.imageUrl} alt="Imagen de la respuesta" />}{post.attachmentUrl && post.attachmentUrl !== post.imageUrl && <AttachmentLink attachment={post} />}<div className="action-row"><button className="mini-action" onClick={() => onReport('post', post.id)}>Reportar</button>{(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}{isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}</div></article>;
                 }) : <p className="empty-state">Aún no hay respuestas en este tema.</p>}
               </div>
