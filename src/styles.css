@@ -550,7 +550,11 @@ body::before, body::after { position: fixed; z-index: -1; width: 46vw; height: 4
 body::before { top: -28vw; right: -13vw; box-shadow: 0 0 100px rgba(69,214,194,.08), inset 0 0 80px rgba(69,214,194,.04); animation: neonDrift 14s ease-in-out infinite alternate; }
 body::after { bottom: -32vw; left: -18vw; border-color: rgba(90,151,235,.07); box-shadow: 0 0 120px rgba(90,151,235,.07), inset 0 0 90px rgba(90,151,235,.04); animation: neonDriftReverse 18s ease-in-out infinite alternate; }
 .forum-app { grid-template-columns: 264px minmax(0, 1fr); background: transparent; }
-.sidebar { position: sticky; overflow: hidden; padding: 22px 14px 18px; background: linear-gradient(145deg, #111b2b 0%, #0e1725 55%, #102638 100%); background-size: 180% 180%; border-right: 1px solid #24364d; box-shadow: 15px 0 40px rgba(0,0,0,.12), inset -1px 0 rgba(69,214,194,.07); animation: sidebarAurora 16s ease infinite; }
+.sidebar { position: sticky; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #31516c transparent; padding: 22px 14px 18px; background: linear-gradient(145deg, #111b2b 0%, #0e1725 55%, #102638 100%); background-size: 180% 180%; border-right: 1px solid #24364d; box-shadow: 15px 0 40px rgba(0,0,0,.12), inset -1px 0 rgba(69,214,194,.07); animation: sidebarAurora 16s ease infinite; }
+.sidebar::-webkit-scrollbar { width: 7px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { border: 1px solid #0e1725; border-radius: 10px; background: #31516c; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: #45d6c2; }
 .sidebar .sidebar-brand { padding: 0 10px 20px; margin-bottom: 17px; border-bottom-color: #283e58; }
 .sidebar .logo { width: 38px; height: 38px; border-radius: 11px; box-shadow: 0 0 0 5px rgba(69,214,194,.08), 0 0 24px rgba(69,214,194,.28), 0 9px 24px rgba(0,0,0,.2); animation: logoPulse 3.8s ease-in-out infinite; }
 .sidebar .brand-block h2 { letter-spacing: -.02em; }
