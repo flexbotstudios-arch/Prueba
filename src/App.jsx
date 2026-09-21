@@ -101,6 +101,14 @@ function App() {
     try {
       const data = await api('/api/data');
       setDb(data);
+      if (isModerator) {
+        try {
+          const reportResult = await api('/api/reports');
+          setReports(reportResult.reports || []);
+        } catch (error) {
+          console.error('Error loading reports:', error);
+        }
+      }
       setSession((current) => {
         const freshUser = current && data.users.find((user) => user.id === current.user.id);
         if (current && !freshUser) return null;
@@ -203,15 +211,6 @@ function App() {
 
   useEffect(() => {
     if (!session || !isModerator) return undefined;
-    const loadReports = async () => {
-      try {
-        const result = await api('/api/reports');
-        setReports(result.reports || []);
-      } catch (error) {
-        console.error('Error loading reports:', error);
-      }
-    };
-    loadReports();
     return undefined;
   }, [session?.token, isModerator]);
 
