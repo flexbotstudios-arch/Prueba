@@ -520,7 +520,8 @@ app.get('/api/search', (req, res) => {
 
 app.post('/api/register', (req, res) => {
   const name = normalizeText(req.body.name);
-  const username = normalizeText(req.body.username).toLowerCase();
+  const enteredUsername = normalizeText(req.body.username).toLowerCase();
+  const username = enteredUsername && enteredUsername.startsWith('@') ? enteredUsername : `@${enteredUsername}`;
   const email = normalizeText(req.body.email).toLowerCase();
   const password = normalizeText(req.body.password);
   if (!name || !username || !email || !password) return res.status(400).json({ message: 'Completa todos los campos' });
