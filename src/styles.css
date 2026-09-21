@@ -84,6 +84,21 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .topbar-title small { color: var(--muted); }
 .topbar-actions { display: flex; align-items: center; gap: 10px; min-width: 280px; }
 .topbar-actions input { max-width: 250px; }
+.global-search { position: relative; display: flex; align-items: center; min-width: 250px; }
+.global-search > svg { position: absolute; left: 11px; color: var(--muted); pointer-events: none; }
+.global-search input { max-width: none; padding-left: 34px; }
+.search-results, .notification-popover { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: min(360px, 90vw); padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: #111a29; box-shadow: 0 18px 45px rgba(0,0,0,.35); }
+.search-results button, .notification-item { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 2px; padding: 9px; border: 1px solid transparent; color: var(--ink); text-align: left; background: transparent; }
+.search-results button:hover, .notification-item:hover { border-color: rgba(69,214,194,.25); background: rgba(69,214,194,.08); }
+.search-results small, .notification-item small { color: var(--muted); font-size: .68rem; }
+.search-results span { color: var(--muted); font-size: .74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.notification-menu { position: relative; }
+.notification-menu summary { list-style: none; }
+.notification-menu summary::-webkit-details-marker { display: none; }
+.notification-menu summary b { min-width: 18px; padding: 1px 5px; border-radius: 9px; color: #071517; background: var(--accent); font-size: .68rem; }
+.notification-popover { right: 0; max-height: 390px; overflow-y: auto; }
+.notification-popover > strong { display: block; padding: 4px 8px 8px; }
+.notification-item.read { opacity: .58; }
 .thread-creator, .page-view { max-width: 1180px; margin: 0 auto; }
 .thread-creator { padding: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(26,43,70,.04); }
 .thread-creator form, .board-form, .support-form, .ticket-reply { display: flex; flex-direction: column; gap: 11px; margin-top: 13px; }
@@ -240,6 +255,8 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
   .topbar, .discussion-header, .ticket-header, .page-heading { flex-direction: column; }
   .topbar-actions { width: 100%; flex-wrap: wrap; }
   .topbar-actions input { max-width: none; }
+  .global-search { width: 100%; min-width: 0; }
+  .notification-menu { margin-left: auto; }
   .forum-layout, .profile-grid { grid-template-columns: 1fr; }
   .profile-hero { align-items: flex-start; }
   .ticket-message { max-width: 94%; }

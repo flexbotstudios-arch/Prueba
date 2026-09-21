@@ -8,7 +8,7 @@ const submitOnEnter = (event) => {
   }
 };
 
-export default function ForumView({ boards, activeThread, filteredThreads, threadForm, setThreadForm, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId }) {
+export default function ForumView({ boards, activeThread, filteredThreads, threadForm, setThreadForm, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId, onReport }) {
   return (
     <>
       <section className="thread-creator">
@@ -46,13 +46,13 @@ export default function ForumView({ boards, activeThread, filteredThreads, threa
                   <h3>{activeThread.title}</h3>
                   <small>Publicado por <button className="inline-link" onClick={() => openProfile(activeThread.authorId)}>{(userMap[activeThread.authorId] || (loggedUser?.id === activeThread.authorId ? loggedUser : { name: 'Usuario' })).name}</button> · {formatDate(activeThread.createdAt)}</small>
                 </div>
-                {isModerator && <div className="action-row"><button className="ghost-btn small-btn" onClick={() => handleLockThread(activeThread)}>{activeThread.locked ? 'Desbloquear' : 'Bloquear'}</button><button className="danger-btn small-btn" onClick={() => handleDeleteThread(activeThread)}>Eliminar</button></div>}
+                <div className="action-row"><button className="mini-action" onClick={() => onReport('thread', activeThread.id)}>Reportar</button>{isModerator && <><button className="ghost-btn small-btn" onClick={() => handleLockThread(activeThread)}>{activeThread.locked ? 'Desbloquear' : 'Bloquear'}</button><button className="danger-btn small-btn" onClick={() => handleDeleteThread(activeThread)}>Eliminar</button></>}</div>
               </div>
               <div className="discussion-body"><p>{activeThread.content}</p></div>
               <div className="post-list">
                 {threadPosts.length ? threadPosts.map((post) => {
                   const postAuthor = userMap[post.authorId] || (loggedUser?.id === post.authorId ? loggedUser : { id: post.authorId, name: 'Usuario', role: 'member' });
-                  return <article key={post.id} className="post-card"><div className="post-meta"><UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} /><span>{formatDate(post.createdAt)}</span></div><p>{post.content}</p><div className="action-row">{(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}{isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}</div></article>;
+                  return <article key={post.id} className="post-card"><div className="post-meta"><UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} /><span>{formatDate(post.createdAt)}</span></div><p>{post.content}</p><div className="action-row"><button className="mini-action" onClick={() => onReport('post', post.id)}>Reportar</button>{(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}{isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}</div></article>;
                 }) : <p className="empty-state">Aún no hay respuestas en este tema.</p>}
               </div>
               {!activeThread.locked && <form onSubmit={handleAddPost} className="reply-form"><textarea value={postDraft} onChange={(event) => setPostDraft(event.target.value)} onKeyDown={submitOnEnter} placeholder="Escribe tu respuesta..." rows="4" /><button className="primary-btn">Responder</button></form>}

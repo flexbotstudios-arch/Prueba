@@ -160,6 +160,28 @@ const initializeDatabase = () => {
     FOREIGN KEY (ticketId) REFERENCES support_messages(id),
     FOREIGN KEY (userId) REFERENCES users(id)
   );`);
+  db.run(`CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporterId INTEGER NOT NULL,
+    targetType TEXT NOT NULL,
+    targetId INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    createdAt TEXT NOT NULL,
+    resolvedAt TEXT DEFAULT NULL,
+    resolvedBy INTEGER DEFAULT NULL,
+    FOREIGN KEY (reporterId) REFERENCES users(id)
+  );`);
+  db.run(`CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    link TEXT DEFAULT '',
+    readAt TEXT DEFAULT NULL,
+    createdAt TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id)
+  );`);
 
   const columns = queryAll('PRAGMA table_info(users)').map((column) => column.name);
   const addColumn = (name, definition) => {
@@ -279,6 +301,10 @@ const sanctionMessage = (user, action) => {
   if (isMuted(user)) return `Fuiste muteado hasta ${user.mutedUntil}${user.muteReason ? ` por: ${user.muteReason}` : '.'}`;
   return `Tu cuenta no puede ${action} en este momento.`;
 };
+const notifyUser = (userId, type, message, link = '') => {
+  if (!userId) return;
+  runSql('INSERT INTO notifications (userId, type, message, link, createdAt) VALUES (?, ?, ?, ?, ?)', [Number(userId), type, message, link, new Date().toISOString()]);
+};
 const actorFromRequest = (req) => {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
@@ -330,6 +356,8 @@ const getForumData = () => {
     posts: queryAll('SELECT * FROM posts ORDER BY createdAt ASC'),
     supportMessages: queryAll('SELECT * FROM support_messages ORDER BY updatedAt DESC'),
     supportReplies: queryAll('SELECT * FROM support_replies ORDER BY createdAt ASC'),
+    notifications: [],
+    reports: [],
   };
 };
 
@@ -346,6 +374,63 @@ app.get('/api/data', (req, res) => {
     });
   }
   return res.json(data);
+});
+
+app.get('/api/notifications', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  return res.json({ notifications: queryAll('SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC LIMIT 40', [actor.id]) });
+});
+
+app.patch('/api/notifications/:id/read', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  runSql('UPDATE notifications SET readAt = ? WHERE id = ? AND userId = ?', [new Date().toISOString(), Number(req.params.id), actor.id]);
+  persistDb();
+  return res.json({ ok: true });
+});
+
+app.post('/api/reports', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  const targetType = normalizeText(req.body.targetType);
+  const targetId = Number(req.body.targetId);
+  const reason = normalizeText(req.body.reason);
+  if (!['thread', 'post'].includes(targetType) || !targetId || !reason) return res.status(400).json({ message: 'Indica el contenido y el motivo del reporte' });
+  const targetTable = targetType === 'thread' ? 'threads' : 'posts';
+  if (!queryOne(`SELECT id FROM ${targetTable} WHERE id = ?`, [targetId])) return res.status(404).json({ message: 'Contenido no encontrado' });
+  if (queryOne('SELECT id FROM reports WHERE reporterId = ? AND targetType = ? AND targetId = ? AND status = ?', [actor.id, targetType, targetId, 'open'])) return res.status(409).json({ message: 'Ya reportaste este contenido' });
+  runSql('INSERT INTO reports (reporterId, targetType, targetId, reason, createdAt) VALUES (?, ?, ?, ?, ?)', [actor.id, targetType, targetId, reason, new Date().toISOString()]);
+  persistDb();
+  return res.status(201).json({ ok: true });
+});
+
+app.get('/api/reports', (req, res) => {
+  const actor = requireRole(req, res, ['moderator', 'admin']);
+  if (!actor) return;
+  return res.json({ reports: queryAll(`SELECT reports.*, reporter.name AS reporterName, reporter.username AS reporterUsername FROM reports JOIN users reporter ON reporter.id = reports.reporterId WHERE reports.status = 'open' ORDER BY reports.createdAt DESC`) });
+});
+
+app.patch('/api/reports/:id', (req, res) => {
+  const actor = requireRole(req, res, ['moderator', 'admin']);
+  if (!actor) return;
+  const status = ['open', 'resolved', 'dismissed'].includes(req.body.status) ? req.body.status : 'resolved';
+  runSql('UPDATE reports SET status = ?, resolvedAt = ?, resolvedBy = ? WHERE id = ?', [status, new Date().toISOString(), actor.id, Number(req.params.id)]);
+  persistDb();
+  return res.json({ ok: true });
+});
+
+app.get('/api/search', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  const query = normalizeText(req.query.q).toLowerCase();
+  if (query.length < 2) return res.json({ users: [], threads: [], posts: [] });
+  const like = `%${query}%`;
+  return res.json({
+    users: queryAll('SELECT id, publicId, name, username, role, avatar FROM users WHERE LOWER(name) LIKE ? OR LOWER(username) LIKE ? LIMIT 20', [like, like]),
+    threads: queryAll('SELECT id, boardId, title, content, authorId, createdAt FROM threads WHERE LOWER(title) LIKE ? OR LOWER(content) LIKE ? ORDER BY createdAt DESC LIMIT 20', [like, like]),
+    posts: queryAll('SELECT id, threadId, content, authorId, createdAt FROM posts WHERE status = \'visible\' AND LOWER(content) LIKE ? ORDER BY createdAt DESC LIMIT 20', [like]),
+  });
 });
 
 app.post('/api/register', (req, res) => {
@@ -543,7 +628,7 @@ app.post('/api/posts', (req, res) => {
   const content = normalizeText(req.body.content);
   const author = requireAuth(req, res);
   if (!author) return;
-  const thread = queryOne('SELECT id, locked FROM threads WHERE id = ?', [Number(req.body.threadId)]);
+  const thread = queryOne('SELECT id, boardId, locked FROM threads WHERE id = ?', [Number(req.body.threadId)]);
   if (!content || !author || !thread) return res.status(400).json({ message: 'Faltan datos para responder' });
   if (Number(thread.locked) === 1) return res.status(403).json({ message: 'Este tema está bloqueado por moderación' });
   if (author.status === 'banned' || isMuted(author)) return res.status(403).json({ message: sanctionMessage(author, 'responder') });
@@ -552,6 +637,8 @@ app.post('/api/posts', (req, res) => {
   statement.run([Number(req.body.threadId), author.id, content, now, 'visible']);
   statement.free();
   const post = queryOne('SELECT * FROM posts WHERE id = ?', [db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]]);
+  const threadAuthor = queryOne('SELECT authorId, title FROM threads WHERE id = ?', [thread.id]);
+  if (threadAuthor?.authorId !== author.id) notifyUser(threadAuthor.authorId, 'reply', `${author.name} respondió a tu publicación.`, `/tablas/${thread.boardId}`);
   persistDb();
   return res.status(201).json({ post });
 });
@@ -629,6 +716,7 @@ app.post('/api/support-messages/:id/replies', (req, res) => {
   if (!content) return res.status(400).json({ message: 'Escribe un mensaje' });
   const now = new Date().toISOString();
   runSql('INSERT INTO support_replies (ticketId, userId, content, createdAt) VALUES (?, ?, ?, ?)', [ticket.id, actor.id, content, now]);
+  if (ticket.userId !== actor.id) notifyUser(ticket.userId, 'ticket', `${actor.name} respondió a tu ticket.`, '/soporte');
   runSql("UPDATE support_messages SET status = ?, updatedAt = ? WHERE id = ?", [hasRole(actor, ['admin', 'support']) ? 'in_progress' : 'open', now, ticket.id]);
   persistDb();
   return res.status(201).json({ ok: true });

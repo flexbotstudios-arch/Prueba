@@ -1,11 +1,14 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Gavel, Headphones, LayoutDashboard, LifeBuoy, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, ChevronDown, Gavel, Headphones, LayoutDashboard, LifeBuoy, Search, ShieldCheck, UserRound } from 'lucide-react';
 import { Avatar, Brand, RoleBadge, RoleCard, UserLink, roleLabels } from './components/Common';
 import { pathForRoute, routeFromPath } from './routing';
 import { canAccessSection, sectionTitles } from './sections';
 import AuthScreen from './views/AuthScreen';
 import ErrorPage from './views/ErrorPage';
 import ForumView from './views/ForumView';
+import AdminView from './views/AdminView';
+import ModerationView from './views/ModerationView';
+import ProfileView from './views/ProfileView';
 
 const SESSION_KEY = 'forum-demo-session';
 const roleDescriptions = {
@@ -50,6 +53,9 @@ function App() {
   const [dialog, setDialog] = useState(null);
   const [userSearch, setUserSearch] = useState('');
   const [sanctionDialog, setSanctionDialog] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [searchResults, setSearchResults] = useState(null);
+  const [reports, setReports] = useState([]);
 
   const setView = (nextView, options = {}) => {
     const route = {
@@ -132,6 +138,37 @@ function App() {
   }, [session]);
 
   useEffect(() => {
+    if (!session) return undefined;
+    const loadNotifications = async () => {
+      try {
+        const result = await api('/api/notifications');
+        setNotifications(result.notifications || []);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    };
+    loadNotifications();
+    const timer = window.setInterval(loadNotifications, 5000);
+    return () => window.clearInterval(timer);
+  }, [session?.token]);
+
+  useEffect(() => {
+    if (!session || searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      return undefined;
+    }
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await api(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+        setSearchResults(result);
+      } catch (error) {
+        console.error('Error searching:', error);
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery, session?.token]);
+
+  useEffect(() => {
     const token = session?.token;
     if (!token) return undefined;
     const markOffline = () => {
@@ -167,6 +204,20 @@ function App() {
   const isCreator = loggedUser?.role === 'creator';
   const isModerator = isAdmin || loggedUser?.role === 'moderator';
   const isSupport = isAdmin || loggedUser?.role === 'support';
+
+  useEffect(() => {
+    if (!session || !isModerator) return undefined;
+    const loadReports = async () => {
+      try {
+        const result = await api('/api/reports');
+        setReports(result.reports || []);
+      } catch (error) {
+        console.error('Error loading reports:', error);
+      }
+    };
+    loadReports();
+    return undefined;
+  }, [session?.token, isModerator]);
 
   useEffect(() => {
     if (!loggedUser) return;
@@ -205,6 +256,25 @@ function App() {
   const showNotice = (message, title = 'Aviso') => setDialog({ title, message, confirmLabel: 'Aceptar' });
   const showConfirm = (message, onConfirm) => setDialog({ title: 'Confirmar acción', message, confirmLabel: 'Confirmar', cancelLabel: 'Cancelar', onConfirm });
   const openSanctionDialog = (user, type) => setSanctionDialog({ user, type });
+  const handleReport = async (targetType, targetId) => {
+    const reason = window.prompt('Motivo del reporte:');
+    if (!reason?.trim()) return;
+    try {
+      await api('/api/reports', json({ targetType, targetId, reason }));
+      showNotice('El reporte fue enviado al equipo de moderación.', 'Reporte enviado');
+    } catch (error) {
+      showNotice(error.message, 'No se pudo enviar el reporte');
+    }
+  };
+  const markNotificationRead = async (notification) => {
+    if (notification.readAt) return;
+    await api(`/api/notifications/${notification.id}/read`, json({}, 'PATCH'));
+    setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item));
+  };
+  const resolveReport = async (reportId, status) => {
+    await api(`/api/reports/${reportId}`, json({ status }, 'PATCH'));
+    setReports((current) => current.filter((report) => report.id !== reportId));
+  };
 
   const handleRegister = async (event) => {
     event.preventDefault();
@@ -466,16 +536,17 @@ function App() {
             <small>{roleDescriptions[loggedUser.role]}</small>
           </div>
           <div className="topbar-actions">
-            {view === 'forum' && <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar en esta tabla" />}
+            {view === 'forum' && <div className="global-search"><Search size={15} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar en todo el foro" />{searchResults && <SearchResults results={searchResults} openProfile={openProfile} setView={setView} />}</div>}
             {['moderation', 'admin', 'creator'].includes(view) && <input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Buscar por @username" />}
             <button className="ghost-btn" onClick={handleLogout}>Cerrar sesión</button>
+            <NotificationBell notifications={notifications} onRead={markNotificationRead} />
           </div>
         </header>
 
         <div className="view-transition" key={`${view}-${selectedBoardId}-${profileId || ''}`}>
-          {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} />}
+          {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} onReport={handleReport} />}
           {view === 'profile' && <ProfileView user={profileUser} isOwn={profileUser?.id === loggedUser.id} form={profileForm} setForm={setProfileForm} onSave={handleProfileSave} threads={profileThreads} posts={profilePosts} formatDate={formatDate} roleLabels={roleLabels} />}
-          {view === 'moderation' && <ModerationView users={searchedUsers} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} onBan={handleBan} onMute={handleMute} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} formatDate={formatDate} />}
+          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} onBan={handleBan} onMute={handleMute} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
           {view === 'creator' && <CreatorView users={searchedUsers} loggedUser={loggedUser} search={userSearch} setSearch={setUserSearch} formatDate={formatDate} onReset={async () => { await api('/api/creator/reset', json({})); await fetchForumData(); }} />}
           {view === 'support' && <TicketSupportView messages={db.supportMessages || []} replies={db.supportReplies || []} users={userMap} loggedUser={loggedUser} isSupport={isSupport} form={supportForm} setForm={setSupportForm} onSubmit={handleSupportSubmit} onStatus={handleSupportStatus} onReply={handleSupportReply} reply={supportReply} setReply={setSupportReply} selectedTicketId={selectedTicketId} setSelectedTicketId={setSelectedTicketId} formatDate={formatDate} />}
@@ -488,157 +559,14 @@ function App() {
   );
 }
 
-function ProfileView({ user, isOwn, form, setForm, onSave, threads, posts, formatDate, roleLabels }) {
-  if (!user) return <p className="empty-state">Perfil no encontrado.</p>;
-  return (
-    <section className="page-view profile-view">
-      <div className="profile-hero">
-        <Avatar user={user} />
-        <div>
-          <span className={`role-badge role-${user.role}`}>{roleLabels[user.role]}</span>
-          <h2>{user.name}</h2>
-          <p className="profile-username">{user.username}</p>
-          <p>{user.bio || 'Este usuario todavía no ha añadido una biografía.'}</p>
-        </div>
-      </div>
-
-      <div className="profile-grid">
-        <div className="panel-card">
-          <p className="mini-label">Información</p>
-          <dl className="profile-facts">
-            <div><dt>ID público</dt><dd>{user.publicId || user.id}</dd></div>
-            <div><dt>Username</dt><dd>{user.username}</dd></div>
-            <div><dt>Cuenta creada</dt><dd>{formatDate(user.createdAt)}</dd></div>
-            <div><dt>Publicaciones</dt><dd>{threads.length}</dd></div>
-            <div><dt>Respuestas</dt><dd>{posts.length}</dd></div>
-            <div><dt>Estado</dt><dd>{user.status === 'banned' ? 'Suspendida' : user.mutedUntil ? 'Silenciada temporalmente' : 'Activa'}</dd></div>
-          </dl>
-        </div>
-
-        {isOwn && (
-          <form className="panel-card profile-form" onSubmit={onSave}>
-            <p className="mini-label">Editar mi perfil</p>
-            <label>Username<input value={form.username || ''} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="@tu_username" /></label>
-            <label>Nombre<input value={form.name || ''} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
-            <label>Foto o avatar<input value={form.avatar || ''} onChange={(event) => setForm({ ...form, avatar: event.target.value })} placeholder="URL o emoji" /></label>
-            <label>Biografía<textarea value={form.bio || ''} onChange={(event) => setForm({ ...form, bio: event.target.value })} rows="4" /></label>
-            <button className="primary-btn">Guardar perfil</button>
-          </form>
-        )}
-      </div>
-
-      <div className="panel-card">
-        <p className="mini-label">Actividad reciente</p>
-        {threads.length + posts.length === 0 ? <p className="empty-state">Todavía no hay actividad.</p> : <div className="activity-list">{threads.slice(0, 5).map((thread) => <div key={`thread-${thread.id}`}><strong>Publicó: {thread.title}</strong><small>{formatDate(thread.createdAt)}</small></div>)}{posts.slice(0, 5).map((post) => <div key={`post-${post.id}`}><strong>Respondió: {post.content.slice(0, 70)}</strong><small>{formatDate(post.createdAt)}</small></div>)}</div>}
-      </div>
-    </section>
-  );
+function NotificationBell({ notifications, onRead }) {
+  const unread = notifications.filter((notification) => !notification.readAt).length;
+  return <details className="notification-menu"><summary className="ghost-btn"><Bell size={16} />{unread > 0 && <b>{unread}</b>}</summary><div className="notification-popover"><strong>Notificaciones</strong>{notifications.length ? notifications.slice(0, 8).map((notification) => <button key={notification.id} className={notification.readAt ? 'notification-item read' : 'notification-item'} onClick={() => onRead(notification)}><span>{notification.message}</span><small>{new Date(notification.createdAt).toLocaleString('es-ES')}</small></button>) : <p className="presence-empty">No tienes notificaciones.</p>}</div></details>;
 }
 
-function ModerationView({ users, hiddenPosts, userMap, loggedUser, onBan, onMute, onOpenSanction, onHide, onDelete, formatDate }) {
-  return (
-    <section className="page-view">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">Control de comunidad</p>
-          <h2>Panel de moderación</h2>
-        </div>
-        <span className="role-badge role-moderator">Moderador</span>
-      </div>
-
-      <div className="panel-card">
-        <p className="mini-label">Usuarios y sanciones</p>
-        <div className="admin-list">
-          {users.filter((user) => user.id !== loggedUser.id).map((user) => (
-            <ModerationUserRow key={user.id} user={user} onOpenSanction={onOpenSanction} formatDate={formatDate} />
-          ))}
-        </div>
-      </div>
-
-      <div className="panel-card">
-        <p className="mini-label">Contenido oculto</p>
-        {hiddenPosts.length ? hiddenPosts.map((post) => (
-          <div className="moderation-item" key={post.id}>
-            <div>
-              <strong>{userMap[post.authorId]?.name}</strong>
-              <small>{post.content}</small>
-            </div>
-            <div className="action-row">
-              <button className="mini-action" onClick={() => onHide(post)}>Mostrar</button>
-              <button className="mini-action danger-text" onClick={() => onDelete(post)}>Eliminar</button>
-            </div>
-          </div>
-        )) : <p className="empty-state">No hay contenido oculto.</p>}
-      </div>
-    </section>
-  );
-}
-
-function ModerationUserRow({ user, onOpenSanction, formatDate }) {
-  const statusText = user.status === 'banned' ? `Suspendido${user.bannedUntil ? ` hasta ${formatDate(user.bannedUntil)}` : ''}` : user.mutedUntil ? `Silenciado hasta ${formatDate(user.mutedUntil)}` : 'Activo';
-  return (
-    <div className="admin-user-row moderation-user-row">
-      <RoleCard user={user} meta={statusText} />
-      <div className="moderation-controls">
-        <button className="mini-action" onClick={() => onOpenSanction(user, 'mute')}>{user.mutedUntil ? 'Cambiar mute' : 'Silenciar'}</button>
-        <button className="mini-action danger-text" onClick={() => onOpenSanction(user, 'ban')}>{user.status === 'banned' ? 'Cambiar ban' : 'Banear'}</button>
-      </div>
-    </div>
-  );
-}
-
-function AdminView({ users, boards, loggedUser, onRoleChange, onCreateBoard, onDeleteBoard }) {
-  return (
-    <section className="page-view">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">Control total</p>
-          <h2>Panel de administración</h2>
-        </div>
-        <RoleBadge role="admin" />
-      </div>
-
-      <div className="panel-card">
-        <p className="mini-label">Gestionar roles</p>
-        <div className="admin-list">
-          {users.map((user) => (
-            <div className="admin-user-row" key={user.id}>
-              <RoleCard user={user} />
-              <select value={user.role} onChange={(event) => onRoleChange(user.id, event.target.value)} disabled={user.id === loggedUser.id}>
-                <option value="member">Miembro</option>
-                <option value="moderator">Moderador</option>
-                <option value="support">Soporte</option>
-                <option value="admin">Administrador</option>
-                <option value="creator">Creador</option>
-              </select>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <form className="panel-card board-form" onSubmit={onCreateBoard}>
-        <p className="mini-label">Crear una tabla</p>
-        <input name="name" placeholder="Nombre de la tabla" />
-        <textarea name="description" placeholder="Descripción" rows="3" />
-        <button className="primary-btn">Guardar tabla</button>
-      </form>
-
-      <div className="panel-card">
-        <p className="mini-label">Gestionar tablas</p>
-        <div className="admin-list">
-          {boards.map((board) => (
-            <div className="admin-user-row" key={board.id}>
-              <div>
-                <strong>{board.name}</strong>
-                <small>{board.description}</small>
-              </div>
-              <button className="mini-action danger-text" onClick={() => onDeleteBoard(board)}>Eliminar tabla</button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+function SearchResults({ results, openProfile, setView }) {
+  const hasResults = results.users.length || results.threads.length || results.posts.length;
+  return <div className="search-results">{hasResults ? <>{results.users.map((user) => <button key={`user-${user.id}`} onClick={() => openProfile(user.id)}><small>Usuario</small><strong>{user.name}</strong><span>{user.username}</span></button>)}{results.threads.map((thread) => <button key={`thread-${thread.id}`} onClick={() => setView('forum', { boardId: thread.boardId })}><small>Publicación</small><strong>{thread.title}</strong><span>{thread.content.slice(0, 70)}</span></button>)}{results.posts.map((post) => <button key={`post-${post.id}`} onClick={() => setView('forum')}><small>Respuesta</small><strong>{post.content.slice(0, 90)}</strong></button>)}</> : <p>Sin resultados.</p>}</div>;
 }
 
 function AppDialog({ dialog, onClose }) {
