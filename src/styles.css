@@ -99,6 +99,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .notification-popover { right: 0; max-height: 390px; overflow-y: auto; }
 .notification-popover > strong { display: block; padding: 4px 8px 8px; }
 .notification-item.read { opacity: .58; }
+.notification-item span { white-space: normal; }
 .thread-creator, .page-view { max-width: 1180px; margin: 0 auto; }
 .thread-creator { padding: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(26,43,70,.04); }
 .thread-creator form, .board-form, .support-form, .ticket-reply { display: flex; flex-direction: column; gap: 11px; margin-top: 13px; }
@@ -169,6 +170,28 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .page-view { display: flex; flex-direction: column; gap: 18px; }
 .page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .page-heading h2 { margin: 4px 0; font-size: 1.7rem; }
+.page-heading small { color: var(--muted); }
+.moderation-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.moderation-summary-card { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 8px 24px rgba(26,43,70,.035); }
+.moderation-summary-card > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; color: var(--accent-dark); background: var(--accent-soft); }
+.moderation-summary-card div { display: flex; flex-direction: column; gap: 1px; }
+.moderation-summary-card strong { font-size: 1.25rem; line-height: 1; }
+.moderation-summary-card small, .section-count { color: var(--muted); font-size: .75rem; }
+.moderation-section .section-header { align-items: center; }
+.moderation-section .section-header h3 { margin: 3px 0 0; font-size: 1.05rem; }
+.moderation-user-wrap { border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; overflow: visible; }
+.moderation-user-wrap .admin-user-row { border: 0; border-radius: 0; background: transparent; }
+.moderation-menu { position: relative; }
+.moderation-menu summary { list-style: none; }
+.moderation-menu summary::-webkit-details-marker { display: none; }
+.moderation-menu-popover { position: absolute; z-index: 5; top: calc(100% + 5px); right: 0; display: flex; min-width: 155px; flex-direction: column; padding: 5px; border: 1px solid var(--line); border-radius: 9px; background: white; box-shadow: var(--shadow); }
+.moderation-menu-popover button { padding: 8px 9px; border: 0; color: var(--ink); text-align: left; background: transparent; font-size: .78rem; }
+.moderation-menu-popover button:hover { border-radius: 6px; background: var(--accent-soft); }
+.moderation-history { margin: 0 11px 11px; padding: 11px; border-top: 1px solid var(--line); background: #f7fafc; }
+.moderation-history > strong { display: block; margin-bottom: 7px; font-size: .8rem; }
+.moderation-history div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .78rem; }
+.moderation-history small { color: var(--muted); text-align: right; }
+.moderation-history p { margin: 0; color: var(--muted); font-size: .78rem; }
 .profile-hero { display: flex; align-items: center; gap: 17px; padding: 22px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
 .profile-hero .avatar { width: 72px; height: 72px; }
 .profile-hero h2 { margin: 7px 0 3px; }
@@ -227,6 +250,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .error-screen h2 { margin: 16px 0 7px; font-size: 1.35rem; }
 .error-screen > p:not(.eyebrow) { max-width: 430px; margin: 0; color: var(--muted); }
 .error-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin-top: 24px; }
+.app-dialog p { white-space: pre-line; }
 
 @media (max-width: 1180px) {
   .main-panel { padding-right: 30px; padding-left: 30px; }
@@ -257,6 +281,9 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
   .topbar-actions input { max-width: none; }
   .global-search { width: 100%; min-width: 0; }
   .notification-menu { margin-left: auto; }
+  .moderation-summary { grid-template-columns: 1fr; }
+  .moderation-history div { flex-direction: column; gap: 3px; }
+  .moderation-history small { text-align: left; }
   .forum-layout, .profile-grid { grid-template-columns: 1fr; }
   .profile-hero { align-items: flex-start; }
   .ticket-message { max-width: 94%; }

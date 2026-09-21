@@ -60,6 +60,7 @@ function App() {
   const [reports, setReports] = useState([]);
   const [reportDraft, setReportDraft] = useState(null);
   const [warningDraft, setWarningDraft] = useState(null);
+  const [moderationHistory, setModerationHistory] = useState({});
 
   const setView = (nextView, options = {}) => {
     const route = {
@@ -270,11 +271,33 @@ function App() {
   };
   const openNotification = async (notification) => {
     await markNotificationRead(notification);
+    if (notification.type === 'warning') {
+      setDialog({
+        title: 'Advertencia de moderación',
+        message: `Motivo: ${notification.warningReason || 'No disponible'}\nModerador: ${notification.moderatorName || 'Moderación comunitaria'}\n\n¿Esto es un error? Crea un ticket de soporte.`,
+        confirmLabel: 'Crear ticket de soporte',
+        cancelLabel: 'Cerrar',
+        onConfirm: () => { setSelectedTicketId(null); setView('support'); },
+      });
+      return;
+    }
     if (!notification.link) return;
     const destination = new URL(notification.link, window.location.origin);
     const route = routeFromPath(destination.pathname, destination.search);
     setView(route.view, { boardId: route.boardId, profileId: route.profileId, threadId: route.threadId });
     if (route.threadId) setSelectedThreadId(route.threadId);
+  };
+  const loadModerationHistory = async (user) => {
+    if (moderationHistory[user.id]) {
+      setModerationHistory((current) => ({ ...current, openUserId: current.openUserId === user.id ? null : user.id }));
+      return;
+    }
+    try {
+      const result = await api(`/api/warnings?userId=${user.id}`);
+      setModerationHistory((current) => ({ ...current, [user.id]: result.warnings || [], openUserId: user.id }));
+    } catch (error) {
+      showNotice(error.message, 'No se pudo cargar el historial');
+    }
   };
   const resolveReport = async (reportId, status) => {
     await api(`/api/reports/${reportId}`, json({ status }, 'PATCH'));
@@ -577,7 +600,7 @@ function App() {
         <div className="view-transition" key={`${view}-${selectedBoardId}-${profileId || ''}`}>
           {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} onReport={handleReport} />}
           {view === 'profile' && <ProfileView user={profileUser} isOwn={profileUser?.id === loggedUser.id} form={profileForm} setForm={setProfileForm} onSave={handleProfileSave} threads={profileThreads} posts={profilePosts} formatDate={formatDate} roleLabels={roleLabels} />}
-          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(userId) => setWarningDraft({ userId, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} formatDate={formatDate} />}
+          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} history={moderationHistory} onLoadHistory={loadModerationHistory} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(userId) => setWarningDraft({ userId, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
           {view === 'creator' && <CreatorView users={searchedUsers} loggedUser={loggedUser} search={userSearch} setSearch={setUserSearch} formatDate={formatDate} onReset={async () => { await api('/api/creator/reset', json({})); await fetchForumData(); }} />}
           {view === 'support' && <TicketSupportView messages={db.supportMessages || []} replies={db.supportReplies || []} users={userMap} loggedUser={loggedUser} isSupport={isSupport} form={supportForm} setForm={setSupportForm} onSubmit={handleSupportSubmit} onStatus={handleSupportStatus} onReply={handleSupportReply} reply={supportReply} setReply={setSupportReply} selectedTicketId={selectedTicketId} setSelectedTicketId={setSelectedTicketId} formatDate={formatDate} />}

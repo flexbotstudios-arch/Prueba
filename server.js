@@ -178,6 +178,7 @@ const initializeDatabase = () => {
     type TEXT NOT NULL,
     message TEXT NOT NULL,
     link TEXT DEFAULT '',
+    entityId INTEGER DEFAULT NULL,
     readAt TEXT DEFAULT NULL,
     createdAt TEXT NOT NULL,
     FOREIGN KEY (userId) REFERENCES users(id)
@@ -206,6 +207,8 @@ const initializeDatabase = () => {
   addColumn('muteReason', "TEXT DEFAULT ''");
   addColumn('bannedUntil', 'TEXT DEFAULT NULL');
   addColumn('banReason', "TEXT DEFAULT ''");
+  const notificationColumns = queryAll('PRAGMA table_info(notifications)').map((column) => column.name);
+  if (!notificationColumns.includes('entityId')) db.run('ALTER TABLE notifications ADD COLUMN entityId INTEGER DEFAULT NULL');
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)');
 
   runSql("UPDATE users SET username = '@user' || id WHERE username IS NULL OR username = ''", []);
@@ -310,9 +313,9 @@ const sanctionMessage = (user, action) => {
   if (isMuted(user)) return `Fuiste muteado hasta ${user.mutedUntil}${user.muteReason ? ` por: ${user.muteReason}` : '.'}`;
   return `Tu cuenta no puede ${action} en este momento.`;
 };
-const notifyUser = (userId, type, message, link = '') => {
+const notifyUser = (userId, type, message, link = '', entityId = null) => {
   if (!userId) return;
-  runSql('INSERT INTO notifications (userId, type, message, link, createdAt) VALUES (?, ?, ?, ?, ?)', [Number(userId), type, message, link, new Date().toISOString()]);
+  runSql('INSERT INTO notifications (userId, type, message, link, entityId, createdAt) VALUES (?, ?, ?, ?, ?, ?)', [Number(userId), type, message, link, entityId, new Date().toISOString()]);
 };
 const actorFromRequest = (req) => {
   const header = req.headers.authorization || '';
@@ -388,7 +391,14 @@ app.get('/api/data', (req, res) => {
 app.get('/api/notifications', (req, res) => {
   const actor = requireAuth(req, res);
   if (!actor) return;
-  return res.json({ notifications: queryAll('SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC LIMIT 40', [actor.id]) });
+  return res.json({ notifications: queryAll(`SELECT notifications.id, notifications.userId, notifications.type,
+    CASE WHEN notifications.type = 'warning' THEN 'Has recibido una advertencia de moderación.' ELSE notifications.message END AS message,
+    notifications.link, notifications.entityId, notifications.readAt, notifications.createdAt,
+    warnings.reason AS warningReason, moderator.name AS moderatorName
+    FROM notifications
+    LEFT JOIN warnings ON notifications.type = 'warning' AND warnings.id = notifications.entityId
+    LEFT JOIN users moderator ON moderator.id = warnings.moderatorId
+    WHERE notifications.userId = ? ORDER BY notifications.createdAt DESC LIMIT 40`, [actor.id]) });
 });
 
 app.patch('/api/notifications/:id/read', (req, res) => {
@@ -439,7 +449,8 @@ app.post('/api/warnings', (req, res) => {
   const now = new Date().toISOString();
   runSql('INSERT INTO warnings (userId, moderatorId, reason, createdAt) VALUES (?, ?, ?, ?)', [userId, actor.id, reason, now]);
   const warningCount = Number(queryOne('SELECT COUNT(*) AS count FROM warnings WHERE userId = ?', [userId])?.count || 0);
-  notifyUser(userId, 'warning', `Has recibido una advertencia: ${reason}`, '/perfil');
+  const warningId = Number(queryOne('SELECT last_insert_rowid() AS id')?.id || 0);
+  notifyUser(userId, 'warning', 'Has recibido una advertencia de moderación.', '/perfil', warningId);
   if (warningCount >= 3) {
     const bannedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     runSql("UPDATE users SET status = 'banned', bannedUntil = ?, banReason = ? WHERE id = ?", [bannedUntil, 'Tres advertencias acumuladas', userId]);
