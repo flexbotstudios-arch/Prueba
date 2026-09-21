@@ -519,7 +519,8 @@ body::before, body::after { opacity: .42; filter: blur(1px); animation-duration:
 .primary-btn:hover, .ghost-btn:hover, .mini-action:hover, .danger-btn:hover, .attachment-button:hover, .send-icon-btn:hover, .ticket-reply .primary-btn:hover { transform: none; box-shadow: none; }
 .primary-btn:hover { background: #55cbbb; }
 .attachment-button:hover, .send-icon-btn:hover, .ticket-reply .primary-btn:hover { background: #20354a; border-color: #4d738d; color: #b7f5ed; }
-.send-icon-btn:active, .attachment-button:active, .ticket-reply .primary-btn:active { transform: scale(.97); }
+.send-icon-btn, .attachment-button, .ticket-reply .primary-btn { animation: none !important; transform: none !important; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease; }
+.send-icon-btn:hover, .send-icon-btn:focus-visible, .attachment-button:hover, .attachment-button:focus-visible, .ticket-reply .primary-btn:hover, .ticket-reply .primary-btn:focus-visible { box-shadow: 0 0 18px rgba(69,214,194,.2); }
 .app-nav button, .board-item, .presence-user { transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
 .app-nav button.active, .board-item.active { box-shadow: inset 2px 0 var(--accent); }
 .view-transition { animation: softViewEnter .24s ease both; }
