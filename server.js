@@ -24,11 +24,13 @@ const upload = multer({
   }),
   limits: { fileSize: 200 * 1024 * 1024 },
 });
-const CREATOR_EMAIL = 'rexgamor613@gmail.com';
-const CREATOR_USERNAMES = new Set(['@mikashiiiok', '@rexgamor613']);
-const CREATOR_USERNAME = '@rexgamor613';
-const CREATOR_NAME = 'Rex Gamor';
-const CREATOR_INITIAL_PASSWORD = process.env.CREATOR_PASSWORD || 'RexGamor613!';
+const CREATOR_EMAIL = 'admin@forum.com';
+const CREATOR_USERNAMES = new Set(['@admin']);
+const CREATOR_USERNAME = '@admin';
+const CREATOR_NAME = 'Admin Account';
+const CREATOR_INITIAL_PASSWORD = 'admin123';
+const LEGACY_CREATOR_EMAIL = 'rexgamor613@gmail.com';
+const LEGACY_CREATOR_USERNAMES = ['@mikashiiiok', '@rexgamor613'];
 
 const isCreatorIdentity = (username = '', email = '') => {
   const normalizedUsername = normalizeText(username).toLowerCase();
@@ -249,17 +251,15 @@ const initializeDatabase = () => {
       runSql("UPDATE users SET passwordHash = ?, password = '[protected]' WHERE id = ?", [hashPassword(user.password), user.id]);
     }
   });
-  runSql('UPDATE users SET role = ? WHERE LOWER(email) = ? OR LOWER(username) IN (?, ?)', ['creator', CREATOR_EMAIL, '@mikashiiiok', '@rexgamor613']);
-
-  let creator = queryOne('SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) IN (?, ?)', [CREATOR_EMAIL, '@mikashiiiok', '@rexgamor613']);
+  let creator = queryOne('SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? OR LOWER(email) = ? OR LOWER(username) IN (?, ?)', [CREATOR_EMAIL, CREATOR_USERNAME, LEGACY_CREATOR_EMAIL, ...LEGACY_CREATOR_USERNAMES]);
   if (!creator) {
     const now = new Date().toISOString();
     const statement = db.prepare('INSERT INTO users (name, username, email, password, passwordHash, role, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
     statement.run([CREATOR_NAME, CREATOR_USERNAME, CREATOR_EMAIL, '[protected]', hashPassword(CREATOR_INITIAL_PASSWORD), 'creator', now]);
     statement.free();
     assignPublicId(db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]);
-  } else if (creator.role !== 'creator') {
-    runSql('UPDATE users SET role = ? WHERE id = ?', ['creator', creator.id]);
+  } else {
+    runSql('UPDATE users SET name = ?, username = ?, email = ?, password = ?, passwordHash = ?, role = ? WHERE id = ?', [CREATOR_NAME, CREATOR_USERNAME, CREATOR_EMAIL, '[protected]', hashPassword(CREATOR_INITIAL_PASSWORD), 'creator', creator.id]);
   }
 
   if (Number(queryOne('SELECT COUNT(*) AS count FROM boards')?.count || 0) === 0) {
@@ -583,9 +583,12 @@ app.post('/api/creator/reset', (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  const identifier = normalizeText(req.body.identifier || req.body.email).toLowerCase();
+  const enteredIdentifier = normalizeText(req.body.identifier || req.body.email).toLowerCase();
   const password = normalizeText(req.body.password);
-  if (!identifier || !password) return res.status(400).json({ message: 'Usuario/correo y contraseña obligatorios' });
+  if (!enteredIdentifier || !password) return res.status(400).json({ message: 'Usuario/correo y contraseña obligatorios' });
+  const identifier = enteredIdentifier.includes('@') && !enteredIdentifier.startsWith('@')
+    ? enteredIdentifier
+    : enteredIdentifier.startsWith('@') ? enteredIdentifier : `@${enteredIdentifier}`;
   const user = queryOne('SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?', [identifier, identifier]);
   if (!user) {
     const missingMessage = identifier.startsWith('@') ? 'Ese usuario no existe.' : 'Ese correo no existe.';
