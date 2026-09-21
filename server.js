@@ -676,7 +676,7 @@ app.post('/api/posts', (req, res) => {
   statement.free();
   const post = queryOne('SELECT * FROM posts WHERE id = ?', [db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]]);
   const threadAuthor = queryOne('SELECT authorId, title FROM threads WHERE id = ?', [thread.id]);
-  if (threadAuthor?.authorId !== author.id) notifyUser(threadAuthor.authorId, 'reply', `${author.name} respondió a tu publicación.`, `/tablas/${thread.boardId}`);
+  if (threadAuthor?.authorId !== author.id) notifyUser(threadAuthor.authorId, 'reply', `${author.name} respondió a tu publicación.`, `/tablas/${thread.boardId}?thread=${thread.id}`);
   persistDb();
   return res.status(201).json({ post });
 });

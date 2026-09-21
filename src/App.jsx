@@ -29,7 +29,7 @@ const submitOnEnter = (event) => {
 };
 
 function App() {
-  const initialRoute = routeFromPath(window.location.pathname);
+  const initialRoute = routeFromPath(window.location.pathname, window.location.search);
   const [db, setDb] = useState({ users: [], boards: [], threads: [], posts: [], supportMessages: [], supportReplies: [] });
   const [session, setSession] = useState(() => {
     const saved = localStorage.getItem(SESSION_KEY);
@@ -66,6 +66,7 @@ function App() {
       view: nextView,
       boardId: options.boardId || selectedBoardId,
       profileId: options.profileId ?? (nextView === 'profile' ? profileId : null),
+      threadId: options.threadId || null,
     };
     const path = pathForRoute(route);
     if (window.location.pathname !== path) window.history.pushState({}, '', path);
@@ -121,10 +122,11 @@ function App() {
 
   useEffect(() => {
     const handleRouteChange = () => {
-      const route = routeFromPath(window.location.pathname);
+      const route = routeFromPath(window.location.pathname, window.location.search);
       setViewState(route.view);
       if (route.errorCode) setErrorCode(route.errorCode);
       if (route.boardId) setSelectedBoardId(route.boardId);
+      if (route.threadId) setSelectedThreadId(route.threadId);
       setProfileId(route.profileId || null);
     };
     window.addEventListener('popstate', handleRouteChange);
@@ -171,17 +173,6 @@ function App() {
     }, 250);
     return () => window.clearTimeout(timer);
   }, [searchQuery, session?.token]);
-
-  useEffect(() => {
-    const token = session?.token;
-    if (!token) return undefined;
-    const markOffline = () => {
-      const body = new Blob([JSON.stringify({ token })], { type: 'application/json' });
-      navigator.sendBeacon?.('/api/presence/offline', body);
-    };
-    window.addEventListener('pagehide', markOffline);
-    return () => window.removeEventListener('pagehide', markOffline);
-  }, [session?.token]);
 
   useEffect(() => {
     if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -276,6 +267,14 @@ function App() {
     if (notification.readAt) return;
     await api(`/api/notifications/${notification.id}/read`, json({}, 'PATCH'));
     setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item));
+  };
+  const openNotification = async (notification) => {
+    await markNotificationRead(notification);
+    if (!notification.link) return;
+    const destination = new URL(notification.link, window.location.origin);
+    const route = routeFromPath(destination.pathname, destination.search);
+    setView(route.view, { boardId: route.boardId, profileId: route.profileId, threadId: route.threadId });
+    if (route.threadId) setSelectedThreadId(route.threadId);
   };
   const resolveReport = async (reportId, status) => {
     await api(`/api/reports/${reportId}`, json({ status }, 'PATCH'));
@@ -571,7 +570,7 @@ function App() {
             {view === 'forum' && <div className="global-search"><Search size={15} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar en todo el foro" />{searchResults && <SearchResults results={searchResults} openProfile={openProfile} setView={setView} />}</div>}
             {['moderation', 'admin', 'creator'].includes(view) && <input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Buscar por @username" />}
             <button className="ghost-btn" onClick={handleLogout}>Cerrar sesión</button>
-            <NotificationBell notifications={notifications} onRead={markNotificationRead} />
+            <NotificationBell notifications={notifications} onOpen={openNotification} />
           </div>
         </header>
 
@@ -593,9 +592,9 @@ function App() {
   );
 }
 
-function NotificationBell({ notifications, onRead }) {
+function NotificationBell({ notifications, onOpen }) {
   const unread = notifications.filter((notification) => !notification.readAt).length;
-  return <details className="notification-menu"><summary className="ghost-btn"><Bell size={16} />{unread > 0 && <b>{unread}</b>}</summary><div className="notification-popover"><strong>Notificaciones</strong>{notifications.length ? notifications.slice(0, 8).map((notification) => <button key={notification.id} className={notification.readAt ? 'notification-item read' : 'notification-item'} onClick={() => onRead(notification)}><span>{notification.message}</span><small>{new Date(notification.createdAt).toLocaleString('es-ES')}</small></button>) : <p className="presence-empty">No tienes notificaciones.</p>}</div></details>;
+  return <details className="notification-menu"><summary className="ghost-btn"><Bell size={16} />{unread > 0 && <b>{unread}</b>}</summary><div className="notification-popover"><strong>Notificaciones</strong>{notifications.length ? notifications.slice(0, 8).map((notification) => <button key={notification.id} className={notification.readAt ? 'notification-item read' : 'notification-item'} onClick={() => onOpen(notification)}><span>{notification.message}</span><small>{new Date(notification.createdAt).toLocaleString('es-ES')}</small></button>) : <p className="presence-empty">No tienes notificaciones.</p>}</div></details>;
 }
 
 function SearchResults({ results, openProfile, setView }) {
