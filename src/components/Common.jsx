@@ -5,7 +5,7 @@ export const roleLabels = { creator: 'Creador', admin: 'Administrador', moderato
 export const roleIcons = { creator: ShieldCheck, admin: ShieldCheck, moderator: Gavel, support: Headphones, member: UserRound };
 
 export function Brand() {
-  return <div className="brand-block sidebar-brand"><div className="logo">F</div><div><p className="eyebrow">Foro comunitario</p><h2>ForumBonito</h2></div></div>;
+  return <div className="brand-block sidebar-brand"><div className="logo">F</div><div><p className="eyebrow">Foro comunitario</p><h2>Foro Demo</h2></div></div>;
 }
 
 export function Avatar({ user, small = false }) {
