@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const dbFilePath = process.env.DB_FILE_PATH || path.join(__dirname, 'data', 'forum.sqlite');
+const uploadDir = path.join(__dirname, 'uploads');
 const SQL = await initSqlJs();
 const sessions = new Map();
 const SESSION_TTL = 8 * 60 * 60 * 1000;
@@ -62,6 +63,7 @@ const getOnlineUserIds = () => {
 };
 
 fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
+fs.mkdirSync(uploadDir, { recursive: true });
 const db = fs.existsSync(dbFilePath) ? new SQL.Database(fs.readFileSync(dbFilePath)) : new SQL.Database();
 
 const runSql = (query, params = []) => {
@@ -207,6 +209,10 @@ const initializeDatabase = () => {
   addColumn('muteReason', "TEXT DEFAULT ''");
   addColumn('bannedUntil', 'TEXT DEFAULT NULL');
   addColumn('banReason', "TEXT DEFAULT ''");
+  const threadColumns = queryAll('PRAGMA table_info(threads)').map((column) => column.name);
+  if (!threadColumns.includes('imageUrl')) db.run("ALTER TABLE threads ADD COLUMN imageUrl TEXT DEFAULT ''");
+  const postColumns = queryAll('PRAGMA table_info(posts)').map((column) => column.name);
+  if (!postColumns.includes('imageUrl')) db.run("ALTER TABLE posts ADD COLUMN imageUrl TEXT DEFAULT ''");
   const notificationColumns = queryAll('PRAGMA table_info(notifications)').map((column) => column.name);
   if (!notificationColumns.includes('entityId')) db.run('ALTER TABLE notifications ADD COLUMN entityId INTEGER DEFAULT NULL');
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)');
@@ -271,7 +277,8 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' http://localhost:3001 http://127.0.0.1:3001 ws://localhost:* ws://127.0.0.1:*");
   next();
 });
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({ limit: '8mb' }));
+app.use('/uploads', express.static(uploadDir));
 
 const serializeUser = (user) => ({
   id: user.id,
@@ -573,6 +580,19 @@ app.post('/api/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
+app.post('/api/uploads', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  const match = normalizeText(req.body.image).match(/^data:(image\/(jpeg|png|gif|webp));base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) return res.status(400).json({ message: 'Selecciona una imagen JPG, PNG, GIF o WebP válida' });
+  const buffer = Buffer.from(match[3], 'base64');
+  if (!buffer.length || buffer.length > 5 * 1024 * 1024) return res.status(413).json({ message: 'La imagen no puede superar los 5 MB' });
+  const extension = match[2] === 'jpeg' ? 'jpg' : match[2];
+  const filename = `${actor.id}-${Date.now()}-${randomBytes(6).toString('hex')}.${extension}`;
+  fs.writeFileSync(path.join(uploadDir, filename), buffer);
+  return res.status(201).json({ url: `/uploads/${filename}` });
+});
+
 app.post('/api/presence/offline', (req, res) => {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : normalizeText(req.body.token);
@@ -674,14 +694,15 @@ app.post('/api/threads', (req, res) => {
   const boardId = normalizeText(req.body.boardId);
   const title = normalizeText(req.body.title);
   const content = normalizeText(req.body.content);
+  const imageUrl = normalizeText(req.body.imageUrl);
   const author = requireAuth(req, res);
   if (!author) return;
-  if (!boardId || !title || !content || !author) return res.status(400).json({ message: 'Faltan datos para crear el tema' });
+  if (!boardId || !title || (!content && !imageUrl) || !author) return res.status(400).json({ message: 'Escribe contenido o adjunta una imagen' });
   if (author.status === 'banned' || isMuted(author)) return res.status(403).json({ message: sanctionMessage(author, 'publicar') });
   if (!queryOne('SELECT id FROM boards WHERE id = ?', [boardId])) return res.status(404).json({ message: 'La tabla no existe' });
   const now = new Date().toISOString();
-  const statement = db.prepare('INSERT INTO threads (boardId, title, content, authorId, createdAt, locked) VALUES (?, ?, ?, ?, ?, ?)');
-  statement.run([boardId, title, content, author.id, now, 0]);
+  const statement = db.prepare('INSERT INTO threads (boardId, title, content, authorId, createdAt, locked, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  statement.run([boardId, title, content, author.id, now, 0, imageUrl]);
   statement.free();
   const thread = queryOne('SELECT * FROM threads WHERE id = ?', [db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]]);
   persistDb();
@@ -690,15 +711,16 @@ app.post('/api/threads', (req, res) => {
 
 app.post('/api/posts', (req, res) => {
   const content = normalizeText(req.body.content);
+  const imageUrl = normalizeText(req.body.imageUrl);
   const author = requireAuth(req, res);
   if (!author) return;
   const thread = queryOne('SELECT id, boardId, locked FROM threads WHERE id = ?', [Number(req.body.threadId)]);
-  if (!content || !author || !thread) return res.status(400).json({ message: 'Faltan datos para responder' });
+  if ((!content && !imageUrl) || !author || !thread) return res.status(400).json({ message: 'Escribe una respuesta o adjunta una imagen' });
   if (Number(thread.locked) === 1) return res.status(403).json({ message: 'Este tema está bloqueado por moderación' });
   if (author.status === 'banned' || isMuted(author)) return res.status(403).json({ message: sanctionMessage(author, 'responder') });
   const now = new Date().toISOString();
-  const statement = db.prepare('INSERT INTO posts (threadId, authorId, content, createdAt, status) VALUES (?, ?, ?, ?, ?)');
-  statement.run([Number(req.body.threadId), author.id, content, now, 'visible']);
+  const statement = db.prepare('INSERT INTO posts (threadId, authorId, content, createdAt, status, imageUrl) VALUES (?, ?, ?, ?, ?, ?)');
+  statement.run([Number(req.body.threadId), author.id, content, now, 'visible', imageUrl]);
   statement.free();
   const post = queryOne('SELECT * FROM posts WHERE id = ?', [db.exec('SELECT last_insert_rowid() AS id')[0].values[0][0]]);
   const threadAuthor = queryOne('SELECT authorId, title FROM threads WHERE id = ?', [thread.id]);

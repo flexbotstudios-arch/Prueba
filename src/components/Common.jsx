@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gavel, Headphones, ShieldCheck, UserRound } from 'lucide-react';
+import { Gavel, Headphones, ImagePlus, ShieldCheck, UserRound } from 'lucide-react';
 
 export const roleLabels = { creator: 'Creador', admin: 'Administrador', moderator: 'Moderador', support: 'Soporte', member: 'Miembro' };
 export const roleIcons = { creator: ShieldCheck, admin: ShieldCheck, moderator: Gavel, support: Headphones, member: UserRound };
@@ -26,4 +26,21 @@ export function UserLink({ user, onClick }) {
 
 export function RoleCard({ user, meta }) {
   return <div className="role-user-card"><Avatar user={user} small /><div className="role-user-copy"><strong>{user.name || user.username || 'Usuario'}</strong><small>{user.username || 'Username no disponible'} · {meta || user.email}</small></div><RoleBadge role={user.role} /></div>;
+}
+
+export function ImagePicker({ value, onChange, uploadImage, label = 'Adjuntar imagen' }) {
+  const [uploading, setUploading] = useState(false);
+  const handleChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      onChange(url);
+    } finally {
+      setUploading(false);
+    }
+  };
+  return <div className="image-picker"><label className="image-picker-button"><ImagePlus size={16} />{uploading ? 'Subiendo...' : value ? 'Cambiar imagen' : label}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleChange} disabled={uploading} /></label>{value && <div className="image-picker-preview"><img src={value} alt="Vista previa" /><button type="button" className="mini-action danger-text" onClick={() => onChange('')}>Quitar</button></div>}</div>;
 }

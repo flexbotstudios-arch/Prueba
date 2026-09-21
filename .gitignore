@@ -4,5 +4,6 @@ dist/
 .env.*
 !.env.example
 data/*.sqlite
+uploads/*
 npm-debug.log*
 *.log

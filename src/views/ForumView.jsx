@@ -1,5 +1,5 @@
 import { Circle, Users } from 'lucide-react';
-import { Avatar, RoleBadge, UserLink } from '../components/Common';
+import { Avatar, ImagePicker, RoleBadge, UserLink } from '../components/Common';
 
 const submitOnEnter = (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {
@@ -8,7 +8,7 @@ const submitOnEnter = (event) => {
   }
 };
 
-export default function ForumView({ boards, activeThread, filteredThreads, threadForm, setThreadForm, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId, onReport }) {
+export default function ForumView({ boards, activeThread, filteredThreads, threadForm, setThreadForm, uploadImage, handleCreateThread, threadPosts, userMap, users, loggedUser, isModerator, formatDate, openProfile, handleAddPost, postDraft, setPostDraft, postImageUrl, setPostImageUrl, handleHidePost, handleDeletePost, handleDeleteThread, handleLockThread, setSelectedThreadId, onReport }) {
   return (
     <>
       <section className="thread-creator">
@@ -16,6 +16,7 @@ export default function ForumView({ boards, activeThread, filteredThreads, threa
         <form onSubmit={handleCreateThread}>
           <input value={threadForm.title} onChange={(event) => setThreadForm({ ...threadForm, title: event.target.value })} placeholder="Título de tu tema" />
           <textarea value={threadForm.content} onChange={(event) => setThreadForm({ ...threadForm, content: event.target.value })} onKeyDown={submitOnEnter} placeholder="Describe tu idea o pregunta..." rows="3" />
+          <ImagePicker value={threadForm.imageUrl} onChange={(imageUrl) => setThreadForm({ ...threadForm, imageUrl })} uploadImage={uploadImage} />
           <button className="primary-btn">Publicar tema</button>
         </form>
       </section>
@@ -48,14 +49,14 @@ export default function ForumView({ boards, activeThread, filteredThreads, threa
                 </div>
                 <div className="action-row"><button className="mini-action" onClick={() => onReport('thread', activeThread.id)}>Reportar</button>{isModerator && <><button className="ghost-btn small-btn" onClick={() => handleLockThread(activeThread)}>{activeThread.locked ? 'Desbloquear' : 'Bloquear'}</button><button className="danger-btn small-btn" onClick={() => handleDeleteThread(activeThread)}>Eliminar</button></>}</div>
               </div>
-              <div className="discussion-body"><p>{activeThread.content}</p></div>
+              <div className="discussion-body">{activeThread.content && <p>{activeThread.content}</p>}{activeThread.imageUrl && <img className="content-image" src={activeThread.imageUrl} alt="Imagen de la publicación" />}</div>
               <div className="post-list">
                 {threadPosts.length ? threadPosts.map((post) => {
                   const postAuthor = userMap[post.authorId] || (loggedUser?.id === post.authorId ? loggedUser : { id: post.authorId, name: 'Usuario', role: 'member' });
-                  return <article key={post.id} className="post-card"><div className="post-meta"><UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} /><span>{formatDate(post.createdAt)}</span></div><p>{post.content}</p><div className="action-row"><button className="mini-action" onClick={() => onReport('post', post.id)}>Reportar</button>{(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}{isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}</div></article>;
+                  return <article key={post.id} className="post-card"><div className="post-meta"><UserLink user={postAuthor} onClick={() => openProfile(post.authorId)} /><span>{formatDate(post.createdAt)}</span></div>{post.content && <p>{post.content}</p>}{post.imageUrl && <img className="content-image" src={post.imageUrl} alt="Imagen de la respuesta" />}<div className="action-row"><button className="mini-action" onClick={() => onReport('post', post.id)}>Reportar</button>{(isModerator || post.authorId === loggedUser.id) && <button className="mini-action" onClick={() => handleHidePost(post)}>{post.status === 'hidden' ? 'Mostrar' : 'Ocultar'}</button>}{isModerator && <button className="mini-action danger-text" onClick={() => handleDeletePost(post)}>Eliminar</button>}</div></article>;
                 }) : <p className="empty-state">Aún no hay respuestas en este tema.</p>}
               </div>
-              {!activeThread.locked && <form onSubmit={handleAddPost} className="reply-form"><textarea value={postDraft} onChange={(event) => setPostDraft(event.target.value)} onKeyDown={submitOnEnter} placeholder="Escribe tu respuesta..." rows="4" /><button className="primary-btn">Responder</button></form>}
+              {!activeThread.locked && <form onSubmit={handleAddPost} className="reply-form"><textarea value={postDraft} onChange={(event) => setPostDraft(event.target.value)} onKeyDown={submitOnEnter} placeholder="Escribe tu respuesta..." rows="4" /><ImagePicker value={postImageUrl} onChange={setPostImageUrl} uploadImage={uploadImage} /><button className="primary-btn">Responder</button></form>}
             </>
           ) : <p className="empty-state">Selecciona un tema para comenzar.</p>}
         </section>
