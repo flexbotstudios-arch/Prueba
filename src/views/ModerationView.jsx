@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { ChevronDown, ClipboardList, Flag, History, ShieldAlert, Trash2 } from 'lucide-react';
 import { RoleCard } from '../components/Common';
 
@@ -11,7 +12,29 @@ function SummaryCard({ icon, label, value }) {
 }
 
 function ModerationUserRow({ user, history, onLoadHistory, onDeleteWarning, onOpenSanction, formatDate }) {
+  const menuRef = useRef(null);
   const statusText = user.status === 'banned' ? `Suspendido${user.bannedUntil ? ` hasta ${formatDate(user.bannedUntil)}` : ''}` : user.mutedUntil ? `Silenciado hasta ${formatDate(user.mutedUntil)}` : 'Activo';
   const isOpen = history.openUserId === user.id;
-  return <div className="moderation-user-wrap"><div className="admin-user-row moderation-user-row"><RoleCard user={user} meta={statusText} /><div className="moderation-controls"><details className="moderation-menu"><summary className="mini-action"><ClipboardList size={14} />Gestionar<ChevronDown size={14} /></summary><div className="moderation-menu-popover"><button onClick={() => onLoadHistory(user)}>Ver historial</button><button onClick={() => onOpenSanction(user, 'mute')}>{user.mutedUntil ? 'Cambiar mute' : 'Silenciar'}</button><button onClick={() => onOpenSanction(user, 'ban')}>{user.status === 'banned' ? 'Cambiar ban' : 'Banear'}</button></div></details></div></div>{isOpen && <div className="moderation-history"><strong>Historial de advertencias</strong>{history[user.id]?.length ? history[user.id].map((warning) => <div key={warning.id}><span>{warning.reason}</span><small>{warning.moderatorName} · {formatDate(warning.createdAt)}</small><button className="history-delete" title="Eliminar advertencia" aria-label={`Eliminar advertencia: ${warning.reason}`} onClick={() => onDeleteWarning(warning, user.id)}><Trash2 size={14} /></button></div>) : <p>No hay advertencias registradas.</p>}</div>}</div>;
+
+  const closeMenu = () => {
+    if (menuRef.current) menuRef.current.removeAttribute('open');
+  };
+
+  const runMenuAction = (action) => {
+    action();
+    closeMenu();
+  };
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        closeMenu();
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  return <div className="moderation-user-wrap"><div className="admin-user-row moderation-user-row"><RoleCard user={user} meta={statusText} /><div className="moderation-controls"><details ref={menuRef} className="moderation-menu"><summary className="mini-action"><ClipboardList size={14} />Gestionar<ChevronDown size={14} /></summary><div className="moderation-menu-popover"><button type="button" onClick={() => runMenuAction(() => onLoadHistory(user))}>Ver historial</button><button type="button" onClick={() => runMenuAction(() => onOpenSanction(user, 'mute'))}>{user.mutedUntil ? 'Cambiar mute' : 'Silenciar'}</button><button type="button" onClick={() => runMenuAction(() => onOpenSanction(user, 'ban'))}>{user.status === 'banned' ? 'Cambiar ban' : 'Banear'}</button></div></details></div></div>{isOpen && <div className="moderation-history"><strong>Historial de advertencias</strong>{history[user.id]?.length ? history[user.id].map((warning) => <div key={warning.id}><span>{warning.reason}</span><small>{warning.moderatorName} · {formatDate(warning.createdAt)}</small><button className="history-delete" title="Eliminar advertencia" aria-label={`Eliminar advertencia: ${warning.reason}`} onClick={() => onDeleteWarning(warning, user.id)}><Trash2 size={14} /></button></div>) : <p>No hay advertencias registradas.</p>}</div>}</div>;
 }
