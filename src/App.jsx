@@ -282,6 +282,7 @@ function App() {
     try {
       await api('/api/reports', json(reportDraft));
       setReportDraft(null);
+      showNotice('Un moderador revisará tu reporte lo antes posible.', 'Reporte enviado con éxito');
     } catch (error) {
       showNotice(error.message, 'No se pudo enviar el reporte');
     }

@@ -119,30 +119,7 @@ function SummaryCard({ icon, label, value }) {
   );
 }
 
-function ReportRow({ report, userMap, onWarn, onOpenSanction, onDeleteReport, onSelectReport }) {
-  const owner = userMap[report.ownerId] || null;
-  const menuRef = useRef(null);
-
-  const closeMenu = () => {
-    if (menuRef.current) menuRef.current.removeAttribute('open');
-  };
-
-  const runMenuAction = (action) => {
-    action();
-    closeMenu();
-  };
-
-  useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        closeMenu();
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
-
+function ReportRow({ report, onSelectReport }) {
   return (
     <div className="moderation-item report-card" key={report.id}>
       <div className="report-card-copy">
@@ -152,21 +129,6 @@ function ReportRow({ report, userMap, onWarn, onOpenSanction, onDeleteReport, on
 
       <div className="report-card-actions">
         <button type="button" className="mini-action" onClick={() => onSelectReport(report)}>Información</button>
-
-        <details ref={menuRef} className="moderation-menu report-menu">
-          <summary className="mini-action">
-            <span>Acciones</span>
-            <ChevronDown size={14} />
-          </summary>
-
-          <div className="moderation-menu-popover">
-            <button type="button" onClick={() => runMenuAction(() => onSelectReport(report))}>Ver detalles</button>
-            <button type="button" onClick={() => runMenuAction(() => onWarn(report.ownerId))}>Advertir</button>
-            <button type="button" onClick={() => runMenuAction(() => onOpenSanction('mute'))}>Silenciar</button>
-            <button type="button" onClick={() => runMenuAction(() => onOpenSanction('ban'))}>Banear</button>
-            <button type="button" className="danger-text" onClick={() => runMenuAction(() => onDeleteReport(report))}>Eliminar publicación</button>
-          </div>
-        </details>
       </div>
     </div>
   );
