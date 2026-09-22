@@ -227,19 +227,18 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .moderation-summary-card small, .section-count { color: var(--muted); font-size: .75rem; }
 .moderation-section .section-header { align-items: center; }
 .moderation-section .section-header h3 { margin: 3px 0 0; font-size: 1.05rem; }
-.moderation-user-wrap { border: 1px solid var(--line); border-radius: 12px; background: #0d1624; overflow: visible; transition: border-color .18s ease, background-color .18s ease; }
+.moderation-user-wrap { position: relative; z-index: 1; border: 1px solid var(--line); border-radius: 12px; background: #0d1624; overflow: visible; transition: border-color .18s ease, background-color .18s ease; }
 .moderation-user-wrap .admin-user-row { border: 0; border-radius: 0; background: transparent; }
 .moderation-user-wrap:hover { border-color: #34516b; background: #101d2e; }
 .moderation-user-wrap .role-user-card { padding: 2px 0; }
 .moderation-user-wrap .role-user-copy strong { color: var(--ink); }
 .moderation-user-wrap .role-user-copy small { color: var(--muted); }
 .moderation-user-wrap .moderation-user-row { padding: 13px 15px; }
-.moderation-section { overflow: visible; }
-.moderation-section .panel-card { overflow: visible; }
-.moderation-menu { position: relative; z-index: 2; }
+.panel-card.moderation-section, .moderation-section { overflow: visible; }
+.moderation-menu { position: relative; z-index: 10; }
 .moderation-menu summary { list-style: none; cursor: pointer; user-select: none; }
 .moderation-menu summary::-webkit-details-marker { display: none; }
-.moderation-menu-popover { position: absolute; z-index: 30; top: calc(100% + 5px); right: 0; display: flex; min-width: 175px; flex-direction: column; padding: 5px; border: 1px solid #34516b; border-radius: 9px; background: #132236; box-shadow: var(--shadow); }
+.moderation-menu-popover { position: absolute; z-index: 50; top: calc(100% + 5px); right: 0; display: flex; min-width: 175px; flex-direction: column; padding: 5px; border: 1px solid #34516b; border-radius: 9px; background: #132236; box-shadow: var(--shadow); }
 .moderation-menu-popover button { padding: 8px 9px; border: 0; color: var(--ink); text-align: left; background: transparent; cursor: pointer; font-size: .78rem; }
 .moderation-menu-popover button:hover { border-radius: 6px; background: var(--accent-soft); }
 .moderation-history { margin: 0 11px 11px; padding: 11px; border-top: 1px solid var(--line); background: #101d2e; }
