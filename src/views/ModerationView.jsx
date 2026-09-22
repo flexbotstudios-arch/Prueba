@@ -2,13 +2,13 @@
 import { AlertTriangle, ChevronDown, ClipboardList, Flag, History, ShieldAlert, Trash2 } from 'lucide-react';
 import { RoleCard } from '../components/Common';
 
-export default function ModerationView({ users, reports, hiddenPosts, userMap, loggedUser, history, onLoadHistory, onDeleteWarning, onOpenSanction, onHide, onDelete, onResolveReport, onOpenReport, onWarn, onDeleteReport, onBanReport, formatDate }) {
+export default function ModerationView({ users, reports, hiddenPosts, userMap, loggedUser, history, onLoadHistory, onDeleteWarning, onOpenSanction, onHide, onDelete, onResolveReport, onOpenReport, onWarn, onDeleteReport, onBanReport, onDismiss, formatDate }) {
   const managedUsers = users.filter((user) => user.id !== loggedUser.id);
   const [selectedReport, setSelectedReport] = useState(null);
 
   const openModerationAction = (report, type) => {
     const user = userMap[report.ownerId] || { id: report.ownerId, name: 'dueño de la publicación', username: 'desconocido' };
-    onOpenSanction(user, type);
+    onOpenSanction(user, type, report);
   };
 
   return (
@@ -89,7 +89,7 @@ export default function ModerationView({ users, reports, hiddenPosts, userMap, l
             setSelectedReport(null);
           }}
           onWarn={() => {
-            onWarn(selectedReport.ownerId);
+            onWarn(selectedReport);
             setSelectedReport(null);
           }}
           onOpenSanction={(type) => {
@@ -98,6 +98,10 @@ export default function ModerationView({ users, reports, hiddenPosts, userMap, l
           }}
           onDeleteReport={() => {
             onDeleteReport(selectedReport);
+            setSelectedReport(null);
+          }}
+          onDismiss={() => {
+            onDismiss(selectedReport);
             setSelectedReport(null);
           }}
           formatDate={formatDate}
@@ -135,7 +139,7 @@ function ReportRow({ report, onSelectReport }) {
   );
 }
 
-function ReportDetailsModal({ report, userMap, onClose, onOpenReport, onWarn, onOpenSanction, onDeleteReport, formatDate }) {
+function ReportDetailsModal({ report, userMap, onClose, onOpenReport, onWarn, onOpenSanction, onDeleteReport, onDismiss, formatDate }) {
   const owner = userMap[report.ownerId] || null;
   const reporter = report.reporterUsername || 'Desconocido';
 
@@ -174,6 +178,7 @@ function ReportDetailsModal({ report, userMap, onClose, onOpenReport, onWarn, on
           <button type="button" className="mini-action" onClick={onWarn}>Advertir</button>
           <button type="button" className="mini-action" onClick={() => onOpenSanction('mute')}>Silenciar</button>
           <button type="button" className="mini-action" onClick={() => onOpenSanction('ban')}>Banear</button>
+          <button type="button" className="ghost-btn" onClick={onDismiss}>Desestimar</button>
           <button type="button" className="mini-action danger-text" onClick={onDeleteReport}>Eliminar</button>
         </div>
       </div>

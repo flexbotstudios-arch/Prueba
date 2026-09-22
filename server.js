@@ -519,9 +519,21 @@ app.patch('/api/reports/:id', (req, res) => {
   const actor = requireRole(req, res, ['moderator', 'admin']);
   if (!actor) return;
   const status = ['open', 'resolved', 'dismissed'].includes(req.body.status) ? req.body.status : 'resolved';
-  runSql('UPDATE reports SET status = ?, resolvedAt = ?, resolvedBy = ? WHERE id = ?', [status, new Date().toISOString(), actor.id, Number(req.params.id)]);
+  const reportId = Number(req.params.id);
+  const report = queryOne('SELECT id, reporterId FROM reports WHERE id = ? AND status = ?', [reportId, 'open']);
+  if (!report) return res.status(404).json({ message: 'Reporte no encontrado o ya resuelto' });
+  const actionLabels = {
+    warning: 'Se emitió una advertencia al usuario reportado.',
+    mute: 'Se aplicó un mute al usuario reportado.',
+    ban: 'Se aplicó un baneo al usuario reportado.',
+    delete: 'Se eliminó la publicación reportada.',
+    dismissed: 'El reporte fue desestimado sin sancionar al usuario.',
+  };
+  const actionMessage = actionLabels[req.body.action] || 'Ya se tomó una acción sobre el contenido reportado.';
+  runSql('UPDATE reports SET status = ?, resolvedAt = ?, resolvedBy = ? WHERE id = ?', [status, new Date().toISOString(), actor.id, reportId]);
+  notifyUser(report.reporterId, 'report', `Reporte #${String(reportId).padStart(2, '0')}: ${actionMessage}`, '');
   persistDb();
-  return res.json({ ok: true });
+  return res.json({ ok: true, reportId });
 });
 
 app.get('/api/search', (req, res) => {

@@ -273,7 +273,7 @@ function App() {
   };
   const showNotice = (message, title = 'Aviso') => setDialog({ title, message, confirmLabel: 'Aceptar' });
   const showConfirm = (message, onConfirm) => setDialog({ title: 'Confirmar acción', message, confirmLabel: 'Confirmar', cancelLabel: 'Cancelar', onConfirm });
-  const openSanctionDialog = (user, type) => setSanctionDialog({ user, type });
+  const openSanctionDialog = (user, type, report = null) => setSanctionDialog({ user, type, report });
   const handleReport = async (targetType, targetId) => {
     try {
       const result = await api(`/api/reports/check?targetType=${encodeURIComponent(targetType)}&targetId=${encodeURIComponent(targetId)}`);
@@ -332,9 +332,16 @@ function App() {
       showNotice(error.message, 'No se pudo cargar el historial');
     }
   };
-  const resolveReport = async (reportId, status) => {
-    await api(`/api/reports/${reportId}`, json({ status }, 'PATCH'));
+  const resolveReport = async (reportId, status, action) => {
+    await api(`/api/reports/${reportId}`, json({ status, action }, 'PATCH'));
     setReports((current) => current.filter((report) => report.id !== reportId));
+  };
+  const dismissReport = async (report) => {
+    try {
+      await resolveReport(report.id, 'dismissed', 'dismissed');
+    } catch (error) {
+      showNotice(error.message, 'No se pudo desestimar el reporte');
+    }
   };
   const submitWarning = async () => {
     if (!warningDraft?.reason.trim()) return;
@@ -342,6 +349,7 @@ function App() {
     try {
       await api('/api/warnings', json({ userId: warningDraft.userId, reason: warningDraft.reason }));
       setWarningDraft(null);
+      if (warningDraft.reportId) await resolveReport(warningDraft.reportId, 'resolved', 'warning');
       const historyResult = await api(`/api/warnings?userId=${warnedUserId}`);
       setModerationHistory((current) => ({ ...current, [warnedUserId]: historyResult.warnings || [], openUserId: warnedUserId }));
       const result = await api('/api/reports');
@@ -368,15 +376,18 @@ function App() {
     setView('forum', { boardId: report.boardId });
   };
   const deleteReportedContent = async (report) => {
-    try {
-      if (report.targetType === 'post') await handleDeletePost({ id: report.targetId });
-      else await handleDeleteThread({ id: report.targetId });
-      await resolveReport(report.id, 'resolved');
-    } catch (error) {
-      showNotice(error.message, 'No se pudo eliminar el contenido');
-    }
+    showConfirm('La publicación reportada se eliminará de forma permanente.', async () => {
+      try {
+        const endpoint = report.targetType === 'post' ? `/api/posts/${report.targetId}` : `/api/threads/${report.targetId}`;
+        await api(endpoint, json({ userId: loggedUser.id }, 'DELETE'));
+        await resolveReport(report.id, 'resolved', 'delete');
+        await fetchForumData(activeThread?.id);
+      } catch (error) {
+        showNotice(error.message, 'No se pudo eliminar el contenido');
+      }
+    });
   };
-  const banReportedOwner = (report) => handleBan({ id: report.ownerId, name: 'dueño de la publicación', status: 'active' }, true, 1440, 'Baneo por contenido reportado');
+  const banReportedOwner = (report) => handleBan({ id: report.ownerId, name: 'dueño de la publicación', status: 'active' }, true, 1440, 'Baneo por contenido reportado', report);
 
   const handleRegister = async (event) => {
     event.preventDefault();
@@ -496,18 +507,20 @@ function App() {
     }
   };
 
-  const handleBan = async (user, banned, durationMinutes, reason) => {
+  const handleBan = async (user, banned, durationMinutes, reason, report = null) => {
     try {
       await api(`/api/users/${user.id}/ban`, json({ userId: loggedUser.id, banned, durationMinutes, reason }, 'PATCH'));
+      if (report) await resolveReport(report.id, 'resolved', 'ban');
       await fetchForumData();
     } catch (error) {
       showNotice(error.message, 'No se pudo actualizar la sanción');
     }
   };
 
-  const handleMute = async (user, minutes, reason) => {
+  const handleMute = async (user, minutes, reason, report = null) => {
     try {
       await api(`/api/users/${user.id}/mute`, json({ userId: loggedUser.id, minutes, reason }, 'PATCH'));
+      if (report) await resolveReport(report.id, 'resolved', 'mute');
       await fetchForumData();
     } catch (error) {
       showNotice(error.message, 'No se pudo actualizar el mute');
@@ -670,7 +683,7 @@ function App() {
         <div className="view-transition" key={`${view}-${selectedBoardId}-${profileId || ''}`}>
           {view === 'forum' && <ForumView boards={boards} selectedBoardId={selectedBoardId} activeThread={activeThread} filteredThreads={filteredThreads} threadForm={threadForm} setThreadForm={setThreadForm} uploadImage={uploadImage} uploadFile={uploadFile} handleCreateThread={handleCreateThread} threadPosts={threadPosts} userMap={userMap} users={db.users} loggedUser={loggedUser} isModerator={isModerator} formatDate={formatDate} openProfile={openProfile} handleAddPost={handleAddPost} postDraft={postDraft} setPostDraft={setPostDraft} postImageUrl={postImageUrl} setPostImageUrl={setPostImageUrl} postAttachment={postAttachment} setPostAttachment={setPostAttachment} handleHidePost={handleHidePost} handleDeletePost={handleDeletePost} handleDeleteThread={handleDeleteThread} handleLockThread={handleLockThread} setSelectedThreadId={setSelectedThreadId} onReport={handleReport} />}
           {view === 'profile' && <ProfileView user={profileUser} isOwn={profileUser?.id === loggedUser.id} form={profileForm} setForm={setProfileForm} uploadImage={uploadImage} onSave={handleProfileSave} threads={profileThreads} posts={profilePosts} formatDate={formatDate} roleLabels={roleLabels} />}
-          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} history={moderationHistory} onLoadHistory={loadModerationHistory} onDeleteWarning={deleteWarning} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(userId) => setWarningDraft({ userId, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} formatDate={formatDate} />}
+          {view === 'moderation' && <ModerationView users={searchedUsers} reports={reports} hiddenPosts={hiddenPosts} userMap={userMap} loggedUser={loggedUser} history={moderationHistory} onLoadHistory={loadModerationHistory} onDeleteWarning={deleteWarning} onOpenSanction={openSanctionDialog} onHide={handleHidePost} onDelete={handleDeletePost} onResolveReport={resolveReport} onOpenReport={openReportedThread} onWarn={(report) => setWarningDraft({ userId: report.ownerId, reportId: report.id, reason: '' })} onDeleteReport={deleteReportedContent} onBanReport={banReportedOwner} onDismiss={dismissReport} formatDate={formatDate} />}
           {view === 'admin' && <AdminView users={searchedUsers} boards={boards} loggedUser={loggedUser} onRoleChange={handleRoleChange} onCreateBoard={handleCreateBoard} onDeleteBoard={handleDeleteBoard} />}
           {view === 'creator' && <CreatorView users={searchedUsers} loggedUser={loggedUser} search={userSearch} setSearch={setUserSearch} formatDate={formatDate} onReset={async () => { await api('/api/creator/reset', json({})); await fetchForumData(); }} />}
           {view === 'support' && <TicketSupportView messages={db.supportMessages || []} replies={db.supportReplies || []} users={userMap} loggedUser={loggedUser} isSupport={isSupport} form={supportForm} setForm={setSupportForm} onSubmit={handleSupportSubmit} onStatus={handleSupportStatus} onReply={handleSupportReply} reply={supportReply} setReply={setSupportReply} attachment={supportAttachment} setAttachment={setSupportAttachment} uploadFile={uploadFile} selectedTicketId={selectedTicketId} setSelectedTicketId={setSelectedTicketId} formatDate={formatDate} />}
@@ -849,14 +862,14 @@ function SanctionDialog({ sanction, onClose, onBan, onMute }) {
   const applySanction = async (revoked = false) => {
     onClose();
     if (revoked) {
-      if (isBan) await onBan(sanction.user, false, 0, '');
-      else await onMute(sanction.user, 0, '');
+      if (isBan) await onBan(sanction.user, false, 0, '', sanction.report);
+      else await onMute(sanction.user, 0, '', sanction.report);
       return;
     }
 
     const durationMinutes = permanent ? (isBan ? 0 : -1) : Math.max(1, Number(amount || 0)) * unitMinutes[unit];
-    if (isBan) await onBan(sanction.user, true, durationMinutes, reason.trim());
-    else await onMute(sanction.user, durationMinutes, reason.trim());
+    if (isBan) await onBan(sanction.user, true, durationMinutes, reason.trim(), sanction.report);
+    else await onMute(sanction.user, durationMinutes, reason.trim(), sanction.report);
   };
 
   return (
