@@ -1,4 +1,4 @@
-# ForumBonito
+# Foro Demo
 
 Foro comunitario con React, Vite, Express y SQLite.
 
