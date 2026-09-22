@@ -224,6 +224,10 @@ function App() {
   }, [loggedUser, view]);
 
   const boards = db.boards || [];
+  const activeBoard = boards.find((board) => board.id === selectedBoardId) || null;
+  const topbarDescription = view === 'forum'
+    ? (activeBoard?.description || 'Explora la conversación activa de la comunidad.')
+    : (roleDescriptions[loggedUser?.role] || 'Participación en conversaciones y perfiles.');
   const visibleThreads = useMemo(
     () => db.threads.filter((thread) => thread.boardId === selectedBoardId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [db.threads, selectedBoardId],
@@ -641,8 +645,8 @@ function App() {
         <header className="topbar">
           <div className="topbar-title">
             <p className="eyebrow">Espacio comunitario</p>
-            <h3>{view === 'forum' ? boards.find((board) => board.id === selectedBoardId)?.name : sectionTitles[view]}</h3>
-            <small>{roleDescriptions[loggedUser.role]}</small>
+            <h3>{view === 'forum' ? activeBoard?.name : sectionTitles[view]}</h3>
+            <small>{topbarDescription}</small>
           </div>
           <div className="topbar-actions">
             {view === 'forum' && <div className="global-search"><Search size={15} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar en todo el foro" />{searchResults && <SearchResults results={searchResults} openProfile={openProfile} setView={setView} />}</div>}
