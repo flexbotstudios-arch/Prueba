@@ -123,6 +123,7 @@ function ReportRow({ report, onSelectReport }) {
   return (
     <div className="moderation-item report-card" key={report.id}>
       <div className="report-card-copy">
+        <span className="report-number">Reporte #{String(report.id).padStart(2, '0')}</span>
         <strong>{report.targetTitle || 'Contenido reportado'}</strong>
         <small>{report.reason} · por {report.reporterUsername} · {report.warningCount} advertencias</small>
       </div>

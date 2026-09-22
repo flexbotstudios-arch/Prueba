@@ -447,11 +447,22 @@ app.post('/api/reports', (req, res) => {
   if (!['thread', 'post'].includes(targetType) || !targetId || !reason) return res.status(400).json({ message: 'Indica el contenido y el motivo del reporte' });
   const targetTable = targetType === 'thread' ? 'threads' : 'posts';
   if (!queryOne(`SELECT id FROM ${targetTable} WHERE id = ?`, [targetId])) return res.status(404).json({ message: 'Contenido no encontrado' });
-  if (queryOne('SELECT id FROM reports WHERE reporterId = ? AND targetType = ? AND targetId = ? AND status = ?', [actor.id, targetType, targetId, 'open'])) return res.status(409).json({ message: 'Ya reportaste este contenido' });
+  if (queryOne('SELECT id FROM reports WHERE reporterId = ? AND targetType = ? AND targetId = ?', [actor.id, targetType, targetId])) return res.status(409).json({ message: 'Ya reportaste este contenido' });
   runSql('INSERT INTO reports (reporterId, targetType, targetId, reason, createdAt) VALUES (?, ?, ?, ?, ?)', [actor.id, targetType, targetId, reason, new Date().toISOString()]);
+  const reportId = Number(queryOne('SELECT last_insert_rowid() AS id')?.id || 0);
   queryAll("SELECT id FROM users WHERE role IN ('moderator', 'admin', 'creator') AND id != ?", [actor.id]).forEach((user) => notifyUser(user.id, 'report', `${actor.name} reportó contenido: ${reason}`, '/paneles/moderacion'));
   persistDb();
-  return res.status(201).json({ ok: true });
+  return res.status(201).json({ ok: true, reportId, reportNumber: reportId });
+});
+
+app.get('/api/reports/check', (req, res) => {
+  const actor = requireAuth(req, res);
+  if (!actor) return;
+  const targetType = normalizeText(req.query.targetType);
+  const targetId = Number(req.query.targetId);
+  if (!['thread', 'post'].includes(targetType) || !targetId) return res.status(400).json({ message: 'Contenido no válido' });
+  const alreadyReported = Boolean(queryOne('SELECT id FROM reports WHERE reporterId = ? AND targetType = ? AND targetId = ?', [actor.id, targetType, targetId]));
+  return res.json({ alreadyReported });
 });
 
 app.get('/api/reports', (req, res) => {

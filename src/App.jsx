@@ -275,14 +275,24 @@ function App() {
   const showConfirm = (message, onConfirm) => setDialog({ title: 'Confirmar acción', message, confirmLabel: 'Confirmar', cancelLabel: 'Cancelar', onConfirm });
   const openSanctionDialog = (user, type) => setSanctionDialog({ user, type });
   const handleReport = async (targetType, targetId) => {
-    setReportDraft({ targetType, targetId, reason: '' });
+    try {
+      const result = await api(`/api/reports/check?targetType=${encodeURIComponent(targetType)}&targetId=${encodeURIComponent(targetId)}`);
+      if (result.alreadyReported) {
+        showNotice('Ya has reportado este contenido. Un moderador lo revisará lo antes posible.', 'No se pudo enviar el reporte');
+        return;
+      }
+      setReportDraft({ targetType, targetId, reason: '' });
+    } catch (error) {
+      showNotice(error.message, 'No se pudo comprobar el reporte');
+    }
   };
   const submitReport = async () => {
     if (!reportDraft?.reason.trim()) return;
     try {
-      await api('/api/reports', json(reportDraft));
+      const result = await api('/api/reports', json(reportDraft));
       setReportDraft(null);
-      showNotice('Un moderador revisará tu reporte lo antes posible.', 'Reporte enviado con éxito');
+      const reportNumber = String(result.reportNumber || result.reportId || '').padStart(2, '0');
+      showNotice(`Reporte #${reportNumber} enviado correctamente. Un moderador lo revisará lo antes posible.`, 'Reporte enviado con éxito');
     } catch (error) {
       showNotice(error.message, 'No se pudo enviar el reporte');
     }

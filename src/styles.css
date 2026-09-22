@@ -463,6 +463,7 @@ input::placeholder, textarea::placeholder { color: #64758c; }
 .warning-dialog .dialog-mark { color: #071517; background: #ffd980; }
 .report-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .report-card-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 5px; }
+.report-number { color: var(--accent-dark); font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .report-card-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-card-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report-card-actions { display: flex; align-items: center; gap: 8px; }
